@@ -8,6 +8,22 @@ export interface Course {
 
 export const courses: Course[] = [
   {
+    id: 'basic_stretch',
+    title: '基本ストレッチコース',
+    description: '全身の主要な筋肉をバランスよく伸ばす基本コース。初心者にもおすすめです。',
+    stretch_ids: [
+      'butterfly_forward_fold',
+      'seated_forward_fold',
+      'straddle_forward_fold',
+      'seiza_backbend',
+      'shoulder_overhead',
+      'neck_side_tilt',
+      'neck_backward',
+      'neck_forward',
+    ],
+    is_free: true,
+  },
+  {
     id: 'morning_basic',
     title: '朝の基本コース',
     description: '朝の目覚めに最適な全身ストレッチ。5分で体をすっきり目覚めさせます。',

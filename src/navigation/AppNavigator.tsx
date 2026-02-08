@@ -4,6 +4,10 @@ import { HomeScreen } from '../screens/HomeScreen'
 import { CourseListScreen } from '../screens/CourseListScreen'
 import { CourseDetailScreen } from '../screens/CourseDetailScreen'
 import { PlayerScreen } from '../screens/PlayerScreen'
+import { CreateCourseListScreen } from '../screens/CreateCourseListScreen'
+import { CreateCourseDetailScreen } from '../screens/CreateCourseDetailScreen'
+import { StretchSelectScreen } from '../screens/StretchSelectScreen'
+import { SettingsScreen } from '../screens/SettingsScreen'
 
 export function AppNavigator() {
   return (
@@ -13,6 +17,10 @@ export function AppNavigator() {
       <Route path="/courses" element={<CourseListScreen />} />
       <Route path="/courses/:courseId" element={<CourseDetailScreen />} />
       <Route path="/player" element={<PlayerScreen />} />
+      <Route path="/create-course" element={<CreateCourseListScreen />} />
+      <Route path="/create-course/:courseId" element={<CreateCourseDetailScreen />} />
+      <Route path="/create-course/:courseId/select-stretch" element={<StretchSelectScreen />} />
+      <Route path="/settings" element={<SettingsScreen />} />
     </Routes>
   )
 }
