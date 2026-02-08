@@ -13,7 +13,7 @@ export function CourseListScreen() {
 
   return (
     <div id="course-list-screen" style={styles.screen}>
-      <Header title="コース一覧" />
+      <Header title="コースでストレッチ" showBack />
       <div id="course-list-content" style={styles.content}>
         {courses.map((course) => {
           const stretchCount = course.stretch_ids.length

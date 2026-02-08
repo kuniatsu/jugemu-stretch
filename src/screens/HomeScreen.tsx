@@ -47,7 +47,7 @@ export function HomeScreen() {
 
   return (
     <div id="home-screen" style={styles.screen}>
-      <Header title="ストレッチタイマー" />
+      <Header title="部位を指定してストレッチ" showBack />
       <div id="home-content" style={styles.content}>
         {viewState.type === 'bodyMap' && (
           <>
