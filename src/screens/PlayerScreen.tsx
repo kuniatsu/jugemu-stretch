@@ -38,10 +38,10 @@ export function PlayerScreen() {
 
   if (stretchList.length === 0) {
     return (
-      <div style={styles.screen}>
-        <div style={styles.emptyContainer}>
-          <p style={styles.emptyText}>ストレッチが選択されていません</p>
-          <button style={styles.primaryButton} onClick={() => navigate('/')}>
+      <div id="player-screen-empty" style={styles.screen}>
+        <div id="player-empty-container" style={styles.emptyContainer}>
+          <p id="player-empty-text" style={styles.emptyText}>ストレッチが選択されていません</p>
+          <button id="player-empty-home-btn" style={styles.primaryButton} onClick={() => navigate('/')}>
             ホームに戻る
           </button>
         </div>
@@ -50,36 +50,36 @@ export function PlayerScreen() {
   }
 
   return (
-    <div style={styles.screen}>
+    <div id="player-screen" style={styles.screen}>
       {/* Top Bar */}
-      <div style={styles.topBar}>
-        <button style={styles.closeButton} onClick={() => navigate(-1)}>
+      <div id="player-top-bar" style={styles.topBar}>
+        <button id="player-close-btn" style={styles.closeButton} onClick={() => navigate(-1)}>
           ✕
         </button>
-        <span style={styles.progress}>
+        <span id="player-progress-text" style={styles.progress}>
           {timer.currentStretchIndex + 1} / {timer.totalStretches}
         </span>
       </div>
 
-      <div style={styles.content}>
+      <div id="player-content" style={styles.content}>
         {timer.phase === 'idle' && (
           <>
-            <h2 style={styles.readyTitle}>ストレッチを始めましょう</h2>
-            <p style={styles.readyDesc}>
+            <h2 id="player-ready-title" style={styles.readyTitle}>ストレッチを始めましょう</h2>
+            <p id="player-ready-desc" style={styles.readyDesc}>
               {stretchList.length}つのストレッチ
             </p>
-            <div style={styles.stretchPreviewList}>
+            <div id="player-preview-list" style={styles.stretchPreviewList}>
               {stretchList.map((s, i) => (
-                <div key={s.id} style={styles.previewItem}>
-                  <span style={styles.previewNumber}>{i + 1}</span>
-                  <span style={styles.previewTitle}>{s.title}</span>
-                  <span style={styles.previewDuration}>
+                <div key={s.id} id={`player-preview-${s.id}`} style={styles.previewItem}>
+                  <span id={`player-preview-num-${s.id}`} style={styles.previewNumber}>{i + 1}</span>
+                  <span id={`player-preview-title-${s.id}`} style={styles.previewTitle}>{s.title}</span>
+                  <span id={`player-preview-duration-${s.id}`} style={styles.previewDuration}>
                     {s.is_sided ? `${s.duration_seconds}秒×2` : `${s.duration_seconds}秒`}
                   </span>
                 </div>
               ))}
             </div>
-            <button style={styles.startButton} onClick={timer.start}>
+            <button id="player-start-btn" style={styles.startButton} onClick={timer.start}>
               スタート
             </button>
           </>
@@ -89,6 +89,7 @@ export function PlayerScreen() {
           <>
             {/* Phase Indicator */}
             <div
+              id="player-phase-indicator"
               style={{
                 ...styles.phaseIndicator,
                 backgroundColor:
@@ -104,24 +105,25 @@ export function PlayerScreen() {
 
             {/* Current Stretch Info */}
             {timer.currentStretch && (
-              <div style={styles.stretchInfo}>
-                <h2 style={styles.stretchTitle}>{timer.currentStretch.title}</h2>
-                <p style={styles.stretchDescription}>
+              <div id="player-stretch-info" style={styles.stretchInfo}>
+                <h2 id="player-stretch-title" style={styles.stretchTitle}>{timer.currentStretch.title}</h2>
+                <p id="player-stretch-description" style={styles.stretchDescription}>
                   {timer.currentStretch.description}
                 </p>
               </div>
             )}
 
             {/* Timer Display */}
-            <div style={styles.timerContainer}>
-              <span style={{ ...styles.timerText, color: timerColor }}>
+            <div id="player-timer-container" style={styles.timerContainer}>
+              <span id="player-timer-text" style={{ ...styles.timerText, color: timerColor }}>
                 {timer.secondsRemaining}
               </span>
             </div>
 
             {/* Progress Bar */}
-            <div style={styles.progressBarContainer}>
+            <div id="player-progress-bar" style={styles.progressBarContainer}>
               <div
+                id="player-progress-bar-fill"
                 style={{
                   ...styles.progressBarFill,
                   width: `${((timer.currentStretchIndex) / timer.totalStretches) * 100}%`,
@@ -130,17 +132,17 @@ export function PlayerScreen() {
             </div>
 
             {/* Controls */}
-            <div style={styles.controls}>
+            <div id="player-controls" style={styles.controls}>
               {timer.isRunning ? (
-                <button style={styles.controlButton} onClick={timer.pause}>
+                <button id="player-pause-btn" style={styles.controlButton} onClick={timer.pause}>
                   ⏸ 一時停止
                 </button>
               ) : (
-                <button style={styles.controlButton} onClick={timer.resume}>
+                <button id="player-resume-btn" style={styles.controlButton} onClick={timer.resume}>
                   ▶ 再開
                 </button>
               )}
-              <button style={styles.stopButton} onClick={timer.stop}>
+              <button id="player-stop-btn" style={styles.stopButton} onClick={timer.stop}>
                 ■ 停止
               </button>
             </div>
@@ -148,13 +150,13 @@ export function PlayerScreen() {
         )}
 
         {timer.phase === 'finished' && (
-          <div style={styles.finishedContainer}>
-            <div style={styles.finishedIcon}>🎉</div>
-            <h2 style={styles.finishedTitle}>お疲れ様でした!</h2>
-            <p style={styles.finishedDesc}>
+          <div id="player-finished" style={styles.finishedContainer}>
+            <div id="player-finished-icon" style={styles.finishedIcon}>🎉</div>
+            <h2 id="player-finished-title" style={styles.finishedTitle}>お疲れ様でした!</h2>
+            <p id="player-finished-desc" style={styles.finishedDesc}>
               全{timer.totalStretches}つのストレッチを完了しました
             </p>
-            <button style={styles.primaryButton} onClick={() => navigate('/')}>
+            <button id="player-finished-home-btn" style={styles.primaryButton} onClick={() => navigate('/')}>
               ホームに戻る
             </button>
           </div>

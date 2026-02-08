@@ -27,10 +27,10 @@ export function CourseDetailScreen() {
 
   if (!course) {
     return (
-      <div style={styles.screen}>
+      <div id="course-detail-screen-empty" style={styles.screen}>
         <Header title="コース" showBack />
-        <div style={styles.empty}>
-          <p>コースが見つかりません</p>
+        <div id="course-detail-empty" style={styles.empty}>
+          <p id="course-detail-empty-text">コースが見つかりません</p>
         </div>
       </div>
     )
@@ -42,34 +42,34 @@ export function CourseDetailScreen() {
   }
 
   return (
-    <div style={styles.screen}>
+    <div id="course-detail-screen" style={styles.screen}>
       <Header title={course.title} showBack />
-      <div style={styles.content}>
-        <div style={styles.infoCard}>
-          <p style={styles.description}>{course.description}</p>
-          <div style={styles.stats}>
-            <div style={styles.stat}>
-              <span style={styles.statValue}>{stretchList.length}</span>
-              <span style={styles.statLabel}>種目</span>
+      <div id="course-detail-content" style={styles.content}>
+        <div id="course-detail-info-card" style={styles.infoCard}>
+          <p id="course-detail-description" style={styles.description}>{course.description}</p>
+          <div id="course-detail-stats" style={styles.stats}>
+            <div id="course-detail-stat-count" style={styles.stat}>
+              <span id="course-detail-stat-count-value" style={styles.statValue}>{stretchList.length}</span>
+              <span id="course-detail-stat-count-label" style={styles.statLabel}>種目</span>
             </div>
-            <div style={styles.stat}>
-              <span style={styles.statValue}>{Math.ceil(totalSeconds / 60)}</span>
-              <span style={styles.statLabel}>分</span>
+            <div id="course-detail-stat-time" style={styles.stat}>
+              <span id="course-detail-stat-time-value" style={styles.statValue}>{Math.ceil(totalSeconds / 60)}</span>
+              <span id="course-detail-stat-time-label" style={styles.statLabel}>分</span>
             </div>
           </div>
         </div>
 
-        <h3 style={styles.sectionTitle}>ストレッチ一覧</h3>
+        <h3 id="course-detail-section-title" style={styles.sectionTitle}>ストレッチ一覧</h3>
 
-        <div style={styles.stretchList}>
+        <div id="course-detail-stretch-list" style={styles.stretchList}>
           {stretchList.map((stretch, index) => (
-            <div key={stretch.id} style={styles.stretchItem}>
-              <div style={styles.stretchNumber}>
+            <div key={stretch.id} id={`course-detail-stretch-${stretch.id}`} style={styles.stretchItem}>
+              <div id={`course-detail-stretch-num-${stretch.id}`} style={styles.stretchNumber}>
                 <span>{index + 1}</span>
               </div>
-              <div style={styles.stretchInfo}>
-                <span style={styles.stretchTitle}>{stretch.title}</span>
-                <span style={styles.stretchMeta}>
+              <div id={`course-detail-stretch-info-${stretch.id}`} style={styles.stretchInfo}>
+                <span id={`course-detail-stretch-title-${stretch.id}`} style={styles.stretchTitle}>{stretch.title}</span>
+                <span id={`course-detail-stretch-meta-${stretch.id}`} style={styles.stretchMeta}>
                   {stretch.duration_seconds}秒
                   {stretch.is_sided ? ' × 左右' : ''}
                 </span>
@@ -78,7 +78,7 @@ export function CourseDetailScreen() {
           ))}
         </div>
 
-        <button style={styles.startButton} onClick={handleStart}>
+        <button id="course-detail-start-btn" style={styles.startButton} onClick={handleStart}>
           コースを開始する
         </button>
       </div>

@@ -12,9 +12,9 @@ export function CourseListScreen() {
   }
 
   return (
-    <div style={styles.screen}>
+    <div id="course-list-screen" style={styles.screen}>
       <Header title="コース一覧" />
-      <div style={styles.content}>
+      <div id="course-list-content" style={styles.content}>
         {courses.map((course) => {
           const stretchCount = course.stretch_ids.length
           const totalSeconds = course.stretch_ids.reduce((acc, id) => {
@@ -27,20 +27,21 @@ export function CourseListScreen() {
           return (
             <button
               key={course.id}
+              id={`course-card-${course.id}`}
               style={styles.card}
               onClick={() => handleCoursePress(course.id)}
             >
-              <div style={styles.cardHeader}>
-                <h3 style={styles.cardTitle}>{course.title}</h3>
+              <div id={`course-card-header-${course.id}`} style={styles.cardHeader}>
+                <h3 id={`course-card-title-${course.id}`} style={styles.cardTitle}>{course.title}</h3>
                 {!course.is_free && (
-                  <span style={styles.premiumBadge}>有料</span>
+                  <span id={`course-premium-badge-${course.id}`} style={styles.premiumBadge}>有料</span>
                 )}
               </div>
-              <p style={styles.cardDesc}>{course.description}</p>
-              <div style={styles.cardMeta}>
-                <span style={styles.metaItem}>{stretchCount}種目</span>
-                <span style={styles.metaDot}>·</span>
-                <span style={styles.metaItem}>約{totalMinutes}分</span>
+              <p id={`course-card-desc-${course.id}`} style={styles.cardDesc}>{course.description}</p>
+              <div id={`course-card-meta-${course.id}`} style={styles.cardMeta}>
+                <span id={`course-card-count-${course.id}`} style={styles.metaItem}>{stretchCount}種目</span>
+                <span id={`course-card-dot-${course.id}`} style={styles.metaDot}>·</span>
+                <span id={`course-card-time-${course.id}`} style={styles.metaItem}>約{totalMinutes}分</span>
               </div>
             </button>
           )

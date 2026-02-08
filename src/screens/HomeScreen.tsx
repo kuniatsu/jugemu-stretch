@@ -36,7 +36,6 @@ export function HomeScreen() {
 
   const handleBack = () => {
     if (viewState.type === 'stretchList') {
-      // Go back to muscle list - find the zone for this muscle
       const muscle = viewState.muscle
       const muscles = getMusclesByZone(muscle.zone_id)
       const zone = { id: muscle.zone_id, name: '', side: muscle.side, x: 0, y: 0, width: 0, height: 0 }
@@ -47,14 +46,15 @@ export function HomeScreen() {
   }
 
   return (
-    <div style={styles.screen}>
+    <div id="home-screen" style={styles.screen}>
       <Header title="ストレッチタイマー" />
-      <div style={styles.content}>
+      <div id="home-content" style={styles.content}>
         {viewState.type === 'bodyMap' && (
           <>
             {/* Front/Back Toggle */}
-            <div style={styles.toggleContainer}>
+            <div id="home-side-toggle" style={styles.toggleContainer}>
               <button
+                id="home-toggle-front"
                 style={{
                   ...styles.toggleButton,
                   ...(side === 'front' ? styles.toggleActive : {}),
@@ -64,6 +64,7 @@ export function HomeScreen() {
                 表面
               </button>
               <button
+                id="home-toggle-back"
                 style={{
                   ...styles.toggleButton,
                   ...(side === 'back' ? styles.toggleActive : {}),
@@ -78,54 +79,56 @@ export function HomeScreen() {
         )}
 
         {viewState.type === 'muscleList' && (
-          <div style={styles.listContainer}>
-            <button style={styles.backLink} onClick={handleBack}>
+          <div id="home-muscle-list" style={styles.listContainer}>
+            <button id="home-muscle-back-btn" style={styles.backLink} onClick={handleBack}>
               ← 部位選択に戻る
             </button>
-            <h2 style={styles.listTitle}>{viewState.zone.name} の筋肉</h2>
+            <h2 id="home-muscle-list-title" style={styles.listTitle}>{viewState.zone.name} の筋肉</h2>
             {viewState.muscles.map((muscle) => (
               <button
                 key={muscle.id}
+                id={`home-muscle-${muscle.id}`}
                 style={styles.listItem}
                 onClick={() => handleMusclePress(muscle)}
               >
-                <span style={styles.listItemText}>{muscle.name}</span>
-                <span style={styles.arrow}>→</span>
+                <span id={`home-muscle-name-${muscle.id}`} style={styles.listItemText}>{muscle.name}</span>
+                <span id={`home-muscle-arrow-${muscle.id}`} style={styles.arrow}>→</span>
               </button>
             ))}
           </div>
         )}
 
         {viewState.type === 'stretchList' && (
-          <div style={styles.listContainer}>
-            <button style={styles.backLink} onClick={handleBack}>
+          <div id="home-stretch-list" style={styles.listContainer}>
+            <button id="home-stretch-back-btn" style={styles.backLink} onClick={handleBack}>
               ← 筋肉一覧に戻る
             </button>
-            <h2 style={styles.listTitle}>{viewState.muscle.name} のストレッチ</h2>
+            <h2 id="home-stretch-list-title" style={styles.listTitle}>{viewState.muscle.name} のストレッチ</h2>
             {viewState.stretches.length === 0 ? (
-              <p style={styles.emptyText}>ストレッチが見つかりません</p>
+              <p id="home-stretch-empty" style={styles.emptyText}>ストレッチが見つかりません</p>
             ) : (
               viewState.stretches.map((stretch) => (
                 <button
                   key={stretch.id}
+                  id={`home-stretch-card-${stretch.id}`}
                   style={styles.stretchCard}
                   onClick={() => handleStretchPress(stretch)}
                 >
-                  <div style={styles.stretchInfo}>
-                    <span style={styles.stretchTitle}>{stretch.title}</span>
-                    <span style={styles.stretchDesc}>{stretch.description}</span>
-                    <div style={styles.stretchMeta}>
-                      <span style={styles.badge}>
+                  <div id={`home-stretch-info-${stretch.id}`} style={styles.stretchInfo}>
+                    <span id={`home-stretch-title-${stretch.id}`} style={styles.stretchTitle}>{stretch.title}</span>
+                    <span id={`home-stretch-desc-${stretch.id}`} style={styles.stretchDesc}>{stretch.description}</span>
+                    <div id={`home-stretch-meta-${stretch.id}`} style={styles.stretchMeta}>
+                      <span id={`home-stretch-duration-${stretch.id}`} style={styles.badge}>
                         {stretch.duration_seconds}秒
                       </span>
                       {stretch.is_sided && (
-                        <span style={{ ...styles.badge, ...styles.badgeSided }}>
+                        <span id={`home-stretch-sided-${stretch.id}`} style={{ ...styles.badge, ...styles.badgeSided }}>
                           左右
                         </span>
                       )}
                     </div>
                   </div>
-                  <span style={styles.playIcon}>▶</span>
+                  <span id={`home-stretch-play-${stretch.id}`} style={styles.playIcon}>▶</span>
                 </button>
               ))
             )}

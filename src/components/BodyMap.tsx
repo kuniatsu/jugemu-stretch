@@ -10,14 +10,15 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
   const zones = getZonesBySide(side)
 
   return (
-    <div style={styles.container}>
-      <svg viewBox="0 0 200 460" style={styles.svg}>
+    <div id="bodymap-container" style={styles.container}>
+      <svg id="bodymap-svg" viewBox="0 0 200 460" style={styles.svg}>
         {/* Head */}
-        <ellipse cx="100" cy="30" rx="22" ry="26" fill={colors.bodyFront} stroke="#ccc" strokeWidth="1" />
+        <ellipse id="bodymap-head" cx="100" cy="30" rx="22" ry="26" fill={colors.bodyFront} stroke="#ccc" strokeWidth="1" />
         {/* Neck */}
-        <rect x="90" y="54" width="20" height="16" fill={colors.bodyFront} stroke="#ccc" strokeWidth="0.5" />
+        <rect id="bodymap-neck" x="90" y="54" width="20" height="16" fill={colors.bodyFront} stroke="#ccc" strokeWidth="0.5" />
         {/* Torso */}
         <path
+          id="bodymap-torso"
           d="M60,70 Q55,68 48,80 L38,130 L38,190 Q38,210 55,220 L70,225 L130,225 L145,220 Q162,210 162,190 L162,130 L152,80 Q145,68 140,70 Z"
           fill={colors.bodyFront}
           stroke="#ccc"
@@ -25,6 +26,7 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
         />
         {/* Left Arm */}
         <path
+          id="bodymap-arm-left"
           d="M48,80 Q35,85 28,110 L20,160 L18,200 Q17,210 22,210 L30,205 L35,160 L38,130"
           fill={colors.bodyFront}
           stroke="#ccc"
@@ -32,6 +34,7 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
         />
         {/* Right Arm */}
         <path
+          id="bodymap-arm-right"
           d="M152,80 Q165,85 172,110 L180,160 L182,200 Q183,210 178,210 L170,205 L165,160 L162,130"
           fill={colors.bodyFront}
           stroke="#ccc"
@@ -39,6 +42,7 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
         />
         {/* Left Leg */}
         <path
+          id="bodymap-leg-left"
           d="M70,225 L65,280 L60,340 L55,400 Q53,420 58,430 L72,430 Q76,420 74,400 L80,340 L85,280 L90,225"
           fill={colors.bodyFront}
           stroke="#ccc"
@@ -46,6 +50,7 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
         />
         {/* Right Leg */}
         <path
+          id="bodymap-leg-right"
           d="M110,225 L115,280 L120,340 L125,400 Q127,420 122,430 L108,430 Q104,420 106,400 L100,340 L95,280 L90,225"
           fill={colors.bodyFront}
           stroke="#ccc"
@@ -60,8 +65,9 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
           const svgH = (zone.height / 100) * 460
 
           return (
-            <g key={zone.id} onClick={() => onZonePress(zone)} style={{ cursor: 'pointer' }}>
+            <g key={zone.id} id={`bodymap-zone-${zone.id}`} onClick={() => onZonePress(zone)} style={{ cursor: 'pointer' }}>
               <rect
+                id={`bodymap-zone-rect-${zone.id}`}
                 x={svgX}
                 y={svgY}
                 width={svgW}
@@ -73,6 +79,7 @@ export function BodyMap({ side, onZonePress }: BodyMapProps) {
                 ry="4"
               />
               <text
+                id={`bodymap-zone-label-${zone.id}`}
                 x={svgX + svgW / 2}
                 y={svgY + svgH / 2}
                 textAnchor="middle"

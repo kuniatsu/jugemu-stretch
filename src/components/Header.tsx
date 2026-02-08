@@ -10,16 +10,16 @@ export function Header({ title, showBack = false }: HeaderProps) {
   const navigate = useNavigate()
 
   return (
-    <div style={styles.container}>
+    <div id="header-container" style={styles.container}>
       {showBack ? (
-        <button style={styles.backButton} onClick={() => navigate(-1)}>
+        <button id="header-back-btn" style={styles.backButton} onClick={() => navigate(-1)}>
           ← 戻る
         </button>
       ) : (
-        <div style={styles.placeholder} />
+        <div id="header-placeholder-left" style={styles.placeholder} />
       )}
-      <h1 style={styles.title}>{title}</h1>
-      <div style={styles.placeholder} />
+      <h1 id="header-title" style={styles.title}>{title}</h1>
+      <div id="header-placeholder-right" style={styles.placeholder} />
     </div>
   )
 }

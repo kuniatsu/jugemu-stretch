@@ -22,7 +22,7 @@ export function TabBar() {
   }
 
   return (
-    <div style={styles.container}>
+    <div id="tabbar-container" style={styles.container}>
       {tabs.map((tab) => {
         const isActive = tab.path === '/'
           ? location.pathname === '/'
@@ -30,14 +30,16 @@ export function TabBar() {
         return (
           <button
             key={tab.path}
+            id={`tabbar-tab-${tab.path === '/' ? 'home' : tab.path.slice(1)}`}
             style={{
               ...styles.tab,
               ...(isActive ? styles.tabActive : {}),
             }}
             onClick={() => navigate(tab.path)}
           >
-            <span style={styles.icon}>{tab.icon}</span>
+            <span id={`tabbar-icon-${tab.path === '/' ? 'home' : tab.path.slice(1)}`} style={styles.icon}>{tab.icon}</span>
             <span
+              id={`tabbar-label-${tab.path === '/' ? 'home' : tab.path.slice(1)}`}
               style={{
                 ...styles.label,
                 color: isActive ? colors.primary : colors.textLight,
