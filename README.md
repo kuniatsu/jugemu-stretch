@@ -182,8 +182,8 @@ src/
 
 ### 6.3. GitHub Pages Settings
 * Source: `/ (root)` on the branch
-* Base URL: `/stretch_app/docs/`
-* 確認URL: `https://kuniatsu.github.io/stretch_app/docs/`
+* Base URL: `/Jugemu-stretch/docs/`
+* 確認URL: `https://kuniatsu.github.io/Jugemu-stretch/docs/`
 * コミット前に必ず `npm run build:gh-pages` を実行すること
 
 ## 7. Implementation Steps for AI Agent
