@@ -1,0 +1,55 @@
+export interface Muscle {
+  id: string
+  name: string
+  zone_id: string
+  side: 'front' | 'back'
+}
+
+export const muscles: Muscle[] = [
+  // Front - Neck/Shoulder
+  { id: 'sternocleidomastoid', name: '胸鎖乳突筋', zone_id: 'neck_front', side: 'front' },
+  { id: 'anterior_deltoid', name: '三角筋前部', zone_id: 'shoulder_front', side: 'front' },
+  // Front - Chest
+  { id: 'pectoralis_major', name: '大胸筋', zone_id: 'chest', side: 'front' },
+  { id: 'pectoralis_minor', name: '小胸筋', zone_id: 'chest', side: 'front' },
+  // Front - Arms
+  { id: 'biceps', name: '上腕二頭筋', zone_id: 'arm_front', side: 'front' },
+  { id: 'forearm_flexors', name: '前腕屈筋群', zone_id: 'arm_front', side: 'front' },
+  // Front - Abdomen
+  { id: 'rectus_abdominis', name: '腹直筋', zone_id: 'abdomen', side: 'front' },
+  { id: 'obliques', name: '腹斜筋', zone_id: 'abdomen', side: 'front' },
+  // Front - Hip
+  { id: 'hip_flexor', name: '腸腰筋', zone_id: 'hip_front', side: 'front' },
+  { id: 'adductors', name: '内転筋群', zone_id: 'hip_front', side: 'front' },
+  // Front - Thigh
+  { id: 'quadriceps', name: '大腿四頭筋', zone_id: 'thigh_front', side: 'front' },
+  // Front - Lower Leg
+  { id: 'tibialis_anterior', name: '前脛骨筋', zone_id: 'lower_leg_front', side: 'front' },
+  // Back - Neck
+  { id: 'trapezius_upper', name: '僧帽筋上部', zone_id: 'neck_back', side: 'back' },
+  // Back - Shoulder
+  { id: 'posterior_deltoid', name: '三角筋後部', zone_id: 'shoulder_back', side: 'back' },
+  { id: 'rotator_cuff', name: '回旋筋腱板', zone_id: 'shoulder_back', side: 'back' },
+  // Back - Upper Back
+  { id: 'rhomboids', name: '菱形筋', zone_id: 'upper_back', side: 'back' },
+  { id: 'trapezius_mid', name: '僧帽筋中部', zone_id: 'upper_back', side: 'back' },
+  // Back - Lower Back
+  { id: 'erector_spinae', name: '脊柱起立筋', zone_id: 'lower_back', side: 'back' },
+  { id: 'quadratus_lumborum', name: '腰方形筋', zone_id: 'lower_back', side: 'back' },
+  // Back - Glutes
+  { id: 'gluteus_maximus', name: '大殿筋', zone_id: 'glutes', side: 'back' },
+  { id: 'gluteus_medius', name: '中殿筋', zone_id: 'glutes', side: 'back' },
+  // Back - Hamstrings
+  { id: 'hamstrings', name: 'ハムストリングス', zone_id: 'thigh_back', side: 'back' },
+  // Back - Calves
+  { id: 'gastrocnemius', name: '腓腹筋', zone_id: 'calf', side: 'back' },
+  { id: 'soleus', name: 'ヒラメ筋', zone_id: 'calf', side: 'back' },
+]
+
+export function getMusclesByZone(zoneId: string): Muscle[] {
+  return muscles.filter((m) => m.zone_id === zoneId)
+}
+
+export function getMuscleById(id: string): Muscle | undefined {
+  return muscles.find((m) => m.id === id)
+}

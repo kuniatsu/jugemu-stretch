@@ -99,7 +99,77 @@ export interface Course {
 }
 ```
 
-## 5. Implementation Steps for AI Agent
+## 5. Development Strategy
+
+### 5.1. Phase 1: Web Version (Current)
+機能検証用のWeb版を先行開発する。全機能をWeb版で確認した後にSPアプリ（React Native）を開発する。
+
+* **Web Framework:** Vite + React + TypeScript
+* **Router:** React Router (HashRouter) — GitHub Pages互換
+* **Audio:** Web Audio API (AudioContext) — `expo-av`の代替
+* **Storage:** localStorage — `AsyncStorage`の代替
+* **表示:** SP表示のみ（max-width: 430px）。レスポンシブ非対応
+* **確認方法:** Chrome DevToolsのSPモード（モバイルシミュレーション）
+* **デプロイ:** GitHub Pages（`docs/`フォルダからの配信）
+* **構成:** React Native移行を意識したディレクトリ構成・インラインスタイル
+
+### 5.2. Phase 2: Mobile App (Future)
+* **Framework:** React Native (Expo SDK 50+)
+* **Navigation:** Expo Router (File-based routing)
+* **リリース:** Google Play / App Store に無料版・有料版を配信
+
+### 5.3. Free / Paid Feature Split
+* **無料版:** プリセットコース（`is_free: true`）、ボディマップからの個別ストレッチ
+* **有料版:** プレミアムコース（`is_free: false`）、カスタムコースビルダー
+
+## 6. Web Version Development
+
+### 6.1. Build & Deploy
+```bash
+# 開発サーバー起動
+npm run dev
+
+# GitHub Pages用ビルド（docs/に出力）
+npm run build:gh-pages
+
+# プロダクションビルド（dist/に出力）
+npm run build
+```
+
+### 6.2. Project Structure
+```
+src/
+├── components/     # 共有UIコンポーネント
+│   ├── BodyMap.tsx
+│   ├── Header.tsx
+│   └── TabBar.tsx
+├── data/           # データ定義（muscles, stretches, courses）
+│   ├── bodyZones.ts
+│   ├── muscles.ts
+│   ├── stretches.ts
+│   └── courses.ts
+├── hooks/          # カスタムフック
+│   └── useStretchTimer.ts
+├── navigation/     # ルーティング
+│   └── AppNavigator.tsx
+├── screens/        # 画面コンポーネント
+│   ├── HomeScreen.tsx
+│   ├── PlayerScreen.tsx
+│   ├── CourseListScreen.tsx
+│   └── CourseDetailScreen.tsx
+├── styles/         # テーマ・スタイル定義
+│   └── theme.ts
+├── App.tsx
+├── main.tsx
+└── index.css
+```
+
+### 6.3. GitHub Pages Settings
+* Source: `docs/` folder on the branch
+* Base URL: `/stretch_app/`
+* コミット前に必ず `npm run build:gh-pages` を実行すること
+
+## 7. Implementation Steps for AI Agent
 
 1.  **Initialize Project:** Set up Expo with TypeScript and Navigation.
 2.  **Data Layer:** Create the `data/` folder and populate dummy data based on the schemas above.
