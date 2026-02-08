@@ -54,8 +54,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   imageWrapper: {
     position: 'relative',
-    width: '75%',
-    maxWidth: 300,
+    width: '100%',
   },
   image: {
     width: '100%',
