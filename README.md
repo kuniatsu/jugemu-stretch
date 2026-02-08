@@ -53,10 +53,26 @@ The core value is a "hands-free" experience with audio guidance and automatic tr
 * **Preset Courses:** Defined in JSON. Lists of stretches played sequentially.
 * **Auto-Transition:** The player automatically moves from one stretch to the next.
 
-### 3.4. Custom Course Builder (Paid Feature)
-* **Functionality:** Users can create their own routines by selecting stretches from the master list.
-* **Storage:** Save data locally using `AsyncStorage` (No backend required).
-* **UI:** List of all stretches with checkboxes -> Reorder capability -> Save with Name.
+### 3.4. Custom Course & Premium Features (Monetization)
+* **Custom Course Builder:** Users can create and save personalized routines.
+* **The "Silence is Golden" Pack (Paid):**
+    * Ability to switch the audio guidance from "Jugemu" to standard "Beep" sounds (`tick.mp3`).
+    * Removes the psychological pressure of classical Japanese storytelling.
+* **Ad-Free:** Removes banner ads between stretches.
+
+### 3.5. Emotional UX (The "Annoying" Factor)
+To prevent the app from being "just another boring timer," it features a unique, somewhat intrusive default experience.
+
+#### 3.5.1. Default Audio: "Jugemu" (寿限無)
+* **Concept:** Instead of a cold, mechanical beep, the app defaults to a full recitation of "Jugemu"—the longest name in Japanese folklore.
+* **Execution:**
+    * The recitation lasts approximately 25-30 seconds, perfectly matching one stretch set.
+    * The user is forced to listen to the entire name "Jugemu-jugemu Gokō-no-surikire..." every single time they stretch a muscle.
+    * **The Psychological Loop:** The repetitive and rhythmic nature of the name is designed to be "mildly infuriating" yet oddly addictive, incentivizing users to either habituate or pay for silence.
+
+#### 3.5.2. The "Stay Still" Penalty (Beta)
+* **Logic:** Uses the device's accelerometer.
+* **Penalty:** If the device detects excessive shaking (struggling) during the stretch, the "Jugemu" audio restarts from the beginning ("寿限無、寿限無..."), effectively extending the stretch duration.
 
 ## 4. Data Structure (JSON Schema)
 
@@ -99,7 +115,78 @@ export interface Course {
 }
 ```
 
-## 5. Implementation Steps for AI Agent
+## 5. Development Strategy
+
+### 5.1. Phase 1: Web Version (Current)
+機能検証用のWeb版を先行開発する。全機能をWeb版で確認した後にSPアプリ（React Native）を開発する。
+
+* **Web Framework:** Vite + React + TypeScript
+* **Router:** React Router (HashRouter) — GitHub Pages互換
+* **Audio:** Web Audio API (AudioContext) — `expo-av`の代替
+* **Storage:** localStorage — `AsyncStorage`の代替
+* **表示:** SP表示のみ（max-width: 430px）。レスポンシブ非対応
+* **確認方法:** Chrome DevToolsのSPモード（モバイルシミュレーション）
+* **デプロイ:** GitHub Pages（`docs/`フォルダからの配信）
+* **構成:** React Native移行を意識したディレクトリ構成・インラインスタイル
+
+### 5.2. Phase 2: Mobile App (Future)
+* **Framework:** React Native (Expo SDK 50+)
+* **Navigation:** Expo Router (File-based routing)
+* **リリース:** Google Play / App Store に無料版・有料版を配信
+
+### 5.3. Free / Paid Feature Split
+* **無料版:** プリセットコース（`is_free: true`）、ボディマップからの個別ストレッチ
+* **有料版:** プレミアムコース（`is_free: false`）、カスタムコースビルダー
+
+## 6. Web Version Development
+
+### 6.1. Build & Deploy
+```bash
+# 開発サーバー起動
+npm run dev
+
+# GitHub Pages用ビルド（docs/に出力）
+npm run build:gh-pages
+
+# プロダクションビルド（dist/に出力）
+npm run build
+```
+
+### 6.2. Project Structure
+```
+src/
+├── components/     # 共有UIコンポーネント
+│   ├── BodyMap.tsx
+│   ├── Header.tsx
+│   └── TabBar.tsx
+├── data/           # データ定義（muscles, stretches, courses）
+│   ├── bodyZones.ts
+│   ├── muscles.ts
+│   ├── stretches.ts
+│   └── courses.ts
+├── hooks/          # カスタムフック
+│   └── useStretchTimer.ts
+├── navigation/     # ルーティング
+│   └── AppNavigator.tsx
+├── screens/        # 画面コンポーネント
+│   ├── HomeScreen.tsx
+│   ├── PlayerScreen.tsx
+│   ├── CourseListScreen.tsx
+│   └── CourseDetailScreen.tsx
+├── styles/         # テーマ・スタイル定義
+│   └── theme.ts
+├── App.tsx
+├── main.tsx
+└── index.css
+```
+
+### 6.3. GitHub Pages Settings
+* Source: `/ (root)` on the branch
+* Base URL: `/stretch_app/docs/`
+* 確認URL: `https://kuniatsu.github.io/stretch_app/docs/`
+* コミット前に必ず `npm run build:gh-pages` を実行すること
+
+## 7. Implementation Steps for AI Agent
 
 1.  **Initialize Project:** Set up Expo with TypeScript and Navigation.
 2.  **Data Layer:** Create the `data/` folder and populate dummy data based on the schemas above.
