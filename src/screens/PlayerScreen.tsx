@@ -13,8 +13,6 @@ function getPhaseLabel(phase: string, activeSide: string): string {
       if (activeSide === 'right') return '右側'
       if (activeSide === 'left') return '左側'
       return '実行中'
-    case 'interval':
-      return '休憩'
     case 'finished':
       return '完了!'
     default:
@@ -85,7 +83,7 @@ export function PlayerScreen() {
           </>
         )}
 
-        {(timer.phase === 'prep' || timer.phase === 'active' || timer.phase === 'interval') && (
+        {(timer.phase === 'prep' || timer.phase === 'active') && (
           <>
             {/* Phase Indicator */}
             <div
@@ -95,8 +93,6 @@ export function PlayerScreen() {
                 backgroundColor:
                   timer.phase === 'prep'
                     ? colors.accent
-                    : timer.phase === 'interval'
-                    ? colors.secondary
                     : colors.primary,
               }}
             >
@@ -142,6 +138,9 @@ export function PlayerScreen() {
                   ▶ 再開
                 </button>
               )}
+              <button id="player-skip-btn" style={styles.skipButton} onClick={timer.skip}>
+                ⏭ スキップ
+              </button>
               <button id="player-stop-btn" style={styles.stopButton} onClick={timer.stop}>
                 ■ 停止
               </button>
@@ -256,6 +255,16 @@ const styles: Record<string, React.CSSProperties> = {
   controlButton: {
     padding: `${spacing.md}px ${spacing.xl}px`,
     backgroundColor: colors.primary,
+    color: colors.surface,
+    border: 'none',
+    borderRadius: borderRadius.lg,
+    fontSize: fontSize.lg,
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  },
+  skipButton: {
+    padding: `${spacing.md}px ${spacing.xl}px`,
+    backgroundColor: colors.accent,
     color: colors.surface,
     border: 'none',
     borderRadius: borderRadius.lg,

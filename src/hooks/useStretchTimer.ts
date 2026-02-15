@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Stretch } from '../data/stretches'
 
-export type TimerPhase = 'idle' | 'prep' | 'active' | 'interval' | 'finished'
+export type TimerPhase = 'idle' | 'prep' | 'active' | 'finished'
 export type ActiveSide = 'none' | 'right' | 'left'
 
 interface TimerState {
@@ -19,10 +19,10 @@ interface UseStretchTimerReturn extends TimerState {
   pause: () => void
   resume: () => void
   stop: () => void
+  skip: () => void
 }
 
 const PREP_DURATION = 5
-const INTERVAL_DURATION = 5
 const URGENT_THRESHOLD = 5
 
 export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
@@ -98,11 +98,11 @@ export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
         }
         case 'active': {
           if (stretch.is_sided && currentState.activeSide === 'right') {
-            // Right done -> Interval -> Left
+            // Right done -> Prep(インターバル) -> Left
             return {
               ...currentState,
-              phase: 'interval',
-              secondsRemaining: INTERVAL_DURATION,
+              phase: 'prep',
+              secondsRemaining: PREP_DURATION,
               activeSide: 'left',
             }
           }
@@ -111,34 +111,35 @@ export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
           if (nextIndex >= stretchList.length) {
             return { ...currentState, phase: 'finished', isRunning: false }
           }
-          // Interval before next stretch
-          return {
-            ...currentState,
-            phase: 'interval',
-            secondsRemaining: INTERVAL_DURATION,
-            currentStretchIndex: nextIndex,
-            activeSide: 'none',
-          }
-        }
-        case 'interval': {
-          const nextStretch = stretchList[currentState.currentStretchIndex]
-          if (currentState.activeSide === 'left') {
-            // Interval -> Left side active
-            return {
-              ...currentState,
-              phase: 'active',
-              secondsRemaining: nextStretch.duration_seconds,
-            }
-          }
-          // Interval -> Prep for next stretch
+          // Prep(インターバル) before next stretch
           return {
             ...currentState,
             phase: 'prep',
             secondsRemaining: PREP_DURATION,
+            currentStretchIndex: nextIndex,
+            activeSide: 'none',
           }
         }
         default:
           return currentState
+      }
+    },
+    [stretchList]
+  )
+
+  // Skip: move to next stretch entirely (skip both sides if sided)
+  const skipToNext = useCallback(
+    (currentState: TimerState): TimerState => {
+      const nextIndex = currentState.currentStretchIndex + 1
+      if (nextIndex >= stretchList.length) {
+        return { ...currentState, phase: 'finished', isRunning: false }
+      }
+      return {
+        ...currentState,
+        phase: 'prep',
+        secondsRemaining: PREP_DURATION,
+        currentStretchIndex: nextIndex,
+        activeSide: 'none',
       }
     },
     [stretchList]
@@ -212,6 +213,13 @@ export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
     })
   }, [clearTimer])
 
+  const skip = useCallback(() => {
+    setState((prev) => {
+      if (prev.phase === 'finished' || prev.phase === 'idle') return prev
+      return skipToNext(prev)
+    })
+  }, [skipToNext])
+
   const currentStretch = stretchList[state.currentStretchIndex] ?? null
 
   return {
@@ -222,6 +230,7 @@ export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
     pause,
     resume,
     stop,
+    skip,
   }
 }
 
