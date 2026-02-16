@@ -1,5 +1,7 @@
 # Stretch Timer App (Expo/React Native)
 
+**GitHub Pages:** https://kuniatsu.github.io/jugemu-stretch/docs/
+
 ## 1. Project Overview
 This is a cross-platform mobile application built with **React Native (Expo)** designed to guide users through stretching routines.
 The core value is a "hands-free" experience with audio guidance and automatic transitions, allowing users to focus entirely on their body.
