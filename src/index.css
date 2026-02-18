@@ -40,3 +40,14 @@ button {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* 筋肉が光るアニメーション（赤い画像のopacityを脈動させる） */
+@keyframes muscle-glow {
+  0% { opacity: 0; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.muscle-glow-overlay {
+  animation: muscle-glow 3s ease-in-out infinite;
+}

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useStretchTimer, URGENT_THRESHOLD } from '../hooks/useStretchTimer'
 import { getStretchById } from '../data/stretches'
+import { getStretchImages } from '../data/stretchImages'
 import type { Stretch } from '../data/stretches'
 import { colors, fontSize, spacing, borderRadius } from '../styles/theme'
 
@@ -109,6 +110,29 @@ export function PlayerScreen() {
               </div>
             )}
 
+            {/* Stretch Image with Muscle Glow */}
+            {timer.currentStretch && (() => {
+              const images = getStretchImages(timer.currentStretch.id)
+              if (!images) return null
+              return (
+                <div id="player-stretch-image" style={styles.imageContainer}>
+                  <img
+                    id="player-stretch-image-white"
+                    src={images.white}
+                    alt=""
+                    style={styles.imageBase}
+                  />
+                  <img
+                    id="player-stretch-image-red"
+                    src={images.red}
+                    alt=""
+                    style={styles.imageOverlay}
+                    className="muscle-glow-overlay"
+                  />
+                </div>
+              )
+            })()}
+
             {/* Timer Display */}
             <div id="player-timer-container" style={styles.timerContainer}>
               <span id="player-timer-text" style={{ ...styles.timerText, color: timerColor }}>
@@ -210,6 +234,28 @@ const styles: Record<string, React.CSSProperties> = {
   stretchInfo: {
     textAlign: 'center',
     maxWidth: '100%',
+  },
+  imageContainer: {
+    position: 'relative',
+    width: 200,
+    height: 200,
+    flexShrink: 0,
+  },
+  imageBase: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
   },
   stretchTitle: {
     fontSize: fontSize.xxl,
