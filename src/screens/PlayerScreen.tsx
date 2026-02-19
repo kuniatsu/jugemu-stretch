@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useStretchTimer, URGENT_THRESHOLD } from '../hooks/useStretchTimer'
 import { getStretchById } from '../data/stretches'
@@ -35,6 +35,88 @@ export function PlayerScreen() {
   const isUrgent = timer.phase === 'active' && timer.secondsRemaining <= URGENT_THRESHOLD
   const timerColor = isUrgent ? colors.timerUrgent : colors.timerNormal
 
+  // Pause popup state
+  const [showPausePopup, setShowPausePopup] = useState(false)
+
+  // Hint text alternation
+  const [hintIndex, setHintIndex] = useState(0)
+  const hints = ['タップで一時停止', 'スワイプで前後のストレッチに移動']
+
+  useEffect(() => {
+    if (timer.phase !== 'prep' && timer.phase !== 'active') return
+    const interval = window.setInterval(() => {
+      setHintIndex((prev) => (prev + 1) % 2)
+    }, 3000)
+    return () => window.clearInterval(interval)
+  }, [timer.phase])
+
+  // Swipe handling
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now(),
+    }
+  }, [])
+
+  // Tap to pause (for mouse/desktop)
+  const handleTap = useCallback(
+    (e: React.MouseEvent) => {
+      // Ignore if it was a swipe (touch events handle swipe)
+      if (e.detail === 0) return // triggered by touch
+
+      if (timer.phase !== 'prep' && timer.phase !== 'active') return
+
+      if (timer.isRunning) {
+        timer.pause()
+        setShowPausePopup(true)
+      }
+    },
+    [timer]
+  )
+
+  // Touch: detect tap vs swipe in touchEnd
+  const handleTouchEndWithTap = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current) return
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x
+      const dy = e.changedTouches[0].clientY - touchStartRef.current.y
+      const dt = Date.now() - touchStartRef.current.time
+      touchStartRef.current = null
+
+      const isSwipe = Math.abs(dx) > 50 && Math.abs(dy) < Math.abs(dx) && dt < 500
+
+      if (isSwipe) {
+        if (dx < 0) {
+          timer.skip()
+        } else {
+          timer.prev()
+        }
+      } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
+        // It's a tap
+        if (timer.phase !== 'prep' && timer.phase !== 'active') return
+        if (timer.isRunning) {
+          timer.pause()
+          setShowPausePopup(true)
+        }
+      }
+    },
+    [timer]
+  )
+
+  const handleResume = () => {
+    setShowPausePopup(false)
+    timer.resume()
+  }
+
+  const handleStop = () => {
+    setShowPausePopup(false)
+    timer.stop()
+    navigate(-1)
+  }
+
   if (stretchList.length === 0) {
     return (
       <div id="player-screen-empty" style={styles.screen}>
@@ -50,16 +132,6 @@ export function PlayerScreen() {
 
   return (
     <div id="player-screen" style={styles.screen}>
-      {/* Top Bar */}
-      <div id="player-top-bar" style={styles.topBar}>
-        <button id="player-close-btn" style={styles.closeButton} onClick={() => navigate(-1)}>
-          ✕
-        </button>
-        <span id="player-progress-text" style={styles.progress}>
-          {timer.currentStretchIndex + 1} / {timer.totalStretches}
-        </span>
-      </div>
-
       <div id="player-content" style={styles.content}>
         {timer.phase === 'idle' && (
           <>
@@ -85,91 +157,93 @@ export function PlayerScreen() {
         )}
 
         {(timer.phase === 'prep' || timer.phase === 'active') && (
-          <>
-            {/* Phase Indicator */}
-            <div
-              id="player-phase-indicator"
-              style={{
-                ...styles.phaseIndicator,
-                backgroundColor:
-                  timer.phase === 'prep'
-                    ? colors.accent
-                    : colors.primary,
-              }}
-            >
-              {getPhaseLabel(timer.phase, timer.activeSide)}
+          <div
+            id="player-active-area"
+            style={styles.activeArea}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEndWithTap}
+            onClick={handleTap}
+          >
+            {/* Top Bar: Title left, Phase right */}
+            <div id="player-top-bar" style={styles.topBar}>
+              <div id="player-top-left" style={styles.topLeft}>
+                {timer.currentStretch && (
+                  <span id="player-stretch-title" style={styles.stretchTitle}>
+                    {timer.currentStretch.title}
+                  </span>
+                )}
+                <span id="player-progress-text" style={styles.progressText}>
+                  {timer.currentStretchIndex + 1} / {timer.totalStretches}
+                </span>
+              </div>
+              <div
+                id="player-phase-indicator"
+                style={{
+                  ...styles.phaseIndicator,
+                  backgroundColor:
+                    timer.phase === 'prep'
+                      ? colors.accent
+                      : colors.primary,
+                }}
+              >
+                {getPhaseLabel(timer.phase, timer.activeSide)}
+              </div>
             </div>
 
-            {/* Current Stretch Info */}
-            {timer.currentStretch && (
-              <div id="player-stretch-info" style={styles.stretchInfo}>
-                <h2 id="player-stretch-title" style={styles.stretchTitle}>{timer.currentStretch.title}</h2>
-                <p id="player-stretch-description" style={styles.stretchDescription}>
-                  {timer.currentStretch.description}
-                </p>
+            {/* Center: Image + Timer */}
+            <div id="player-center" style={styles.center}>
+              {/* Stretch Image with Muscle Glow */}
+              {timer.currentStretch && (() => {
+                const images = getStretchImages(timer.currentStretch.id)
+                if (!images) return null
+                return (
+                  <div id="player-stretch-image" style={styles.imageContainer}>
+                    <img
+                      id="player-stretch-image-white"
+                      src={images.white}
+                      alt=""
+                      style={styles.imageBase}
+                    />
+                    <img
+                      id="player-stretch-image-red"
+                      src={images.red}
+                      alt=""
+                      style={styles.imageOverlay}
+                      className="muscle-glow-overlay"
+                    />
+                  </div>
+                )
+              })()}
+
+              {/* Timer Display */}
+              <div id="player-timer-container" style={styles.timerContainer}>
+                <span id="player-timer-text" style={{ ...styles.timerText, color: timerColor }}>
+                  {timer.secondsRemaining}
+                </span>
               </div>
-            )}
+            </div>
 
-            {/* Stretch Image with Muscle Glow */}
-            {timer.currentStretch && (() => {
-              const images = getStretchImages(timer.currentStretch.id)
-              if (!images) return null
-              return (
-                <div id="player-stretch-image" style={styles.imageContainer}>
-                  <img
-                    id="player-stretch-image-white"
-                    src={images.white}
-                    alt=""
-                    style={styles.imageBase}
-                  />
-                  <img
-                    id="player-stretch-image-red"
-                    src={images.red}
-                    alt=""
-                    style={styles.imageOverlay}
-                    className="muscle-glow-overlay"
-                  />
-                </div>
-              )
-            })()}
-
-            {/* Timer Display */}
-            <div id="player-timer-container" style={styles.timerContainer}>
-              <span id="player-timer-text" style={{ ...styles.timerText, color: timerColor }}>
-                {timer.secondsRemaining}
+            {/* Bottom: Progress Bar + Hint */}
+            <div id="player-bottom" style={styles.bottom}>
+              <div id="player-progress-bar" style={styles.progressBarContainer}>
+                <div
+                  id="player-progress-bar-fill"
+                  style={{
+                    ...styles.progressBarFill,
+                    width: `${((timer.currentStretchIndex) / timer.totalStretches) * 100}%`,
+                  }}
+                />
+              </div>
+              <span
+                id="player-hint-text"
+                key={hintIndex}
+                className="player-hint-blink"
+                style={styles.hintText}
+              >
+                {hints[hintIndex]}
               </span>
             </div>
-
-            {/* Progress Bar */}
-            <div id="player-progress-bar" style={styles.progressBarContainer}>
-              <div
-                id="player-progress-bar-fill"
-                style={{
-                  ...styles.progressBarFill,
-                  width: `${((timer.currentStretchIndex) / timer.totalStretches) * 100}%`,
-                }}
-              />
-            </div>
-
-            {/* Controls */}
-            <div id="player-controls" style={styles.controls}>
-              {timer.isRunning ? (
-                <button id="player-pause-btn" style={styles.controlButton} onClick={timer.pause}>
-                  ⏸ 一時停止
-                </button>
-              ) : (
-                <button id="player-resume-btn" style={styles.controlButton} onClick={timer.resume}>
-                  ▶ 再開
-                </button>
-              )}
-              <button id="player-skip-btn" style={styles.skipButton} onClick={timer.skip}>
-                ⏭ スキップ
-              </button>
-              <button id="player-stop-btn" style={styles.stopButton} onClick={timer.stop}>
-                ■ 停止
-              </button>
-            </div>
-          </>
+          </div>
         )}
 
         {timer.phase === 'finished' && (
@@ -185,6 +259,24 @@ export function PlayerScreen() {
           </div>
         )}
       </div>
+
+      {/* Pause Popup */}
+      {showPausePopup && (
+        <div id="player-pause-overlay" style={styles.overlay}>
+          <div id="player-pause-popup" style={styles.popup}>
+            <h3 id="player-pause-title" style={styles.popupTitle}>一時停止中</h3>
+            <p id="player-pause-msg" style={styles.popupMsg}>再開しますか？</p>
+            <div id="player-pause-actions" style={styles.popupActions}>
+              <button id="player-pause-resume" style={styles.popupResumeBtn} onClick={handleResume}>
+                再開
+              </button>
+              <button id="player-pause-stop" style={styles.popupStopBtn} onClick={handleStop}>
+                終了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -197,48 +289,60 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
+  content: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  activeArea: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    userSelect: 'none',
+    touchAction: 'pan-y',
+    cursor: 'pointer',
+  },
   topBar: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: `${spacing.sm}px ${spacing.md}px`,
+    alignItems: 'flex-start',
+    padding: `${spacing.md}px ${spacing.md}px 0`,
   },
-  closeButton: {
-    background: 'none',
-    border: 'none',
+  topLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
+  stretchTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: 'bold',
     color: colors.surface,
-    fontSize: fontSize.xl,
-    cursor: 'pointer',
-    padding: spacing.sm,
   },
-  progress: {
+  progressText: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.5)',
+  },
+  phaseIndicator: {
+    padding: `${spacing.xs}px ${spacing.md}px`,
+    borderRadius: borderRadius.full,
     fontSize: fontSize.md,
-    color: 'rgba(255,255,255,0.7)',
+    fontWeight: 'bold',
+    color: colors.surface,
+    flexShrink: 0,
   },
-  content: {
+  center: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  phaseIndicator: {
-    padding: `${spacing.sm}px ${spacing.xl}px`,
-    borderRadius: borderRadius.full,
-    fontSize: fontSize.lg,
-    fontWeight: 'bold',
-    color: colors.surface,
-  },
-  stretchInfo: {
-    textAlign: 'center',
-    maxWidth: '100%',
+    gap: spacing.md,
+    padding: spacing.md,
   },
   imageContainer: {
     position: 'relative',
-    width: 200,
-    height: 200,
+    width: 220,
+    height: 220,
     flexShrink: 0,
   },
   imageBase: {
@@ -257,23 +361,12 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100%',
     objectFit: 'contain',
   },
-  stretchTitle: {
-    fontSize: fontSize.xxl,
-    fontWeight: 'bold',
-    margin: `0 0 ${spacing.sm}px`,
-  },
-  stretchDescription: {
-    fontSize: fontSize.md,
-    color: 'rgba(255,255,255,0.7)',
-    lineHeight: 1.5,
-    margin: 0,
-  },
   timerContainer: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 180,
-    height: 180,
+    width: 140,
+    height: 140,
     borderRadius: '50%',
     border: '4px solid rgba(255,255,255,0.2)',
   },
@@ -281,6 +374,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: fontSize.timer,
     fontWeight: 'bold',
     fontVariantNumeric: 'tabular-nums',
+  },
+  bottom: {
+    padding: `0 ${spacing.md}px ${spacing.lg}px`,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.sm,
+    alignItems: 'center',
   },
   progressBarContainer: {
     width: '100%',
@@ -294,56 +394,35 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 2,
     transition: 'width 0.3s',
   },
-  controls: {
-    display: 'flex',
-    gap: spacing.md,
+  hintText: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
   },
-  controlButton: {
-    padding: `${spacing.md}px ${spacing.xl}px`,
-    backgroundColor: colors.primary,
-    color: colors.surface,
-    border: 'none',
-    borderRadius: borderRadius.lg,
-    fontSize: fontSize.lg,
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  },
-  skipButton: {
-    padding: `${spacing.md}px ${spacing.xl}px`,
-    backgroundColor: colors.accent,
-    color: colors.surface,
-    border: 'none',
-    borderRadius: borderRadius.lg,
-    fontSize: fontSize.lg,
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  },
-  stopButton: {
-    padding: `${spacing.md}px ${spacing.xl}px`,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    color: colors.surface,
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: borderRadius.lg,
-    fontSize: fontSize.lg,
-    cursor: 'pointer',
-  },
+  // Idle / Preview
   readyTitle: {
     fontSize: fontSize.xxl,
     fontWeight: 'bold',
     margin: 0,
+    textAlign: 'center',
+    padding: `${spacing.xl}px ${spacing.lg}px 0`,
   },
   readyDesc: {
     fontSize: fontSize.lg,
     color: 'rgba(255,255,255,0.7)',
     margin: 0,
+    textAlign: 'center',
+    padding: `${spacing.sm}px`,
   },
   stretchPreviewList: {
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
     gap: spacing.sm,
-    maxHeight: 300,
+    padding: `0 ${spacing.lg}px`,
+    maxHeight: 400,
     overflowY: 'auto',
+    flex: 1,
   },
   previewItem: {
     display: 'flex',
@@ -380,12 +459,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: fontSize.xl,
     fontWeight: 'bold',
     cursor: 'pointer',
-    marginTop: spacing.md,
+    margin: `${spacing.md}px auto ${spacing.xl}px`,
   },
+  // Finished
   finishedContainer: {
+    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.md,
   },
   finishedIcon: {
@@ -423,5 +505,62 @@ const styles: Record<string, React.CSSProperties> = {
   emptyText: {
     fontSize: fontSize.lg,
     color: 'rgba(255,255,255,0.7)',
+  },
+  // Pause Popup
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: spacing.lg,
+  },
+  popup: {
+    backgroundColor: '#2a2a4e',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 300,
+    textAlign: 'center',
+  },
+  popupTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: 'bold',
+    color: colors.surface,
+    margin: `0 0 ${spacing.sm}px`,
+  },
+  popupMsg: {
+    fontSize: fontSize.md,
+    color: 'rgba(255,255,255,0.7)',
+    margin: `0 0 ${spacing.lg}px`,
+  },
+  popupActions: {
+    display: 'flex',
+    gap: spacing.md,
+    justifyContent: 'center',
+  },
+  popupResumeBtn: {
+    padding: `${spacing.md}px ${spacing.xl}px`,
+    backgroundColor: colors.secondary,
+    color: colors.surface,
+    border: 'none',
+    borderRadius: borderRadius.lg,
+    fontSize: fontSize.lg,
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  },
+  popupStopBtn: {
+    padding: `${spacing.md}px ${spacing.xl}px`,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    color: colors.surface,
+    border: '1px solid rgba(255,255,255,0.3)',
+    borderRadius: borderRadius.lg,
+    fontSize: fontSize.lg,
+    cursor: 'pointer',
   },
 }

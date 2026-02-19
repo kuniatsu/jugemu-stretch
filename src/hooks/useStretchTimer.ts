@@ -20,6 +20,7 @@ interface UseStretchTimerReturn extends TimerState {
   resume: () => void
   stop: () => void
   skip: () => void
+  prev: () => void
 }
 
 const PREP_DURATION = 5
@@ -220,6 +221,30 @@ export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
     })
   }, [skipToNext])
 
+  const prev = useCallback(() => {
+    setState((prevState) => {
+      if (prevState.phase === 'finished' || prevState.phase === 'idle') return prevState
+      const prevIndex = prevState.currentStretchIndex - 1
+      if (prevIndex < 0) {
+        // Already at first stretch, restart it
+        return {
+          ...prevState,
+          phase: 'prep' as TimerPhase,
+          secondsRemaining: PREP_DURATION,
+          currentStretchIndex: 0,
+          activeSide: 'none' as ActiveSide,
+        }
+      }
+      return {
+        ...prevState,
+        phase: 'prep' as TimerPhase,
+        secondsRemaining: PREP_DURATION,
+        currentStretchIndex: prevIndex,
+        activeSide: 'none' as ActiveSide,
+      }
+    })
+  }, [])
+
   const currentStretch = stretchList[state.currentStretchIndex] ?? null
 
   return {
@@ -231,6 +256,7 @@ export function useStretchTimer(stretchList: Stretch[]): UseStretchTimerReturn {
     resume,
     stop,
     skip,
+    prev,
   }
 }
 

@@ -11,7 +11,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { id: 'menu-course', label: 'コースでストレッチ', icon: '📋', path: '/courses', enabled: true },
-  { id: 'menu-bodymap', label: '部位を指定してストレッチ', icon: '💀', path: '/bodymap', enabled: true },
+  { id: 'menu-bodymap', label: '部位を指定してストレッチ', icon: '💪', path: '/bodymap', enabled: true },
   { id: 'menu-create', label: 'コースを作成する', icon: '✏️', path: '/create-course', enabled: true },
   { id: 'menu-settings', label: '設定', icon: '⚙️', path: '/settings', enabled: true },
 ]

@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom'
 import { MenuScreen } from '../screens/MenuScreen'
 import { HomeScreen } from '../screens/HomeScreen'
 import { CourseListScreen } from '../screens/CourseListScreen'
-import { CourseDetailScreen } from '../screens/CourseDetailScreen'
 import { PlayerScreen } from '../screens/PlayerScreen'
 import { CreateCourseListScreen } from '../screens/CreateCourseListScreen'
 import { CreateCourseDetailScreen } from '../screens/CreateCourseDetailScreen'
@@ -15,7 +14,6 @@ export function AppNavigator() {
       <Route path="/" element={<MenuScreen />} />
       <Route path="/bodymap" element={<HomeScreen />} />
       <Route path="/courses" element={<CourseListScreen />} />
-      <Route path="/courses/:courseId" element={<CourseDetailScreen />} />
       <Route path="/player" element={<PlayerScreen />} />
       <Route path="/create-course" element={<CreateCourseListScreen />} />
       <Route path="/create-course/:courseId" element={<CreateCourseDetailScreen />} />

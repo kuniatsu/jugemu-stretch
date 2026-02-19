@@ -8,7 +8,10 @@ export function CourseListScreen() {
   const navigate = useNavigate()
 
   const handleCoursePress = (courseId: string) => {
-    navigate(`/courses/${courseId}`)
+    const course = courses.find((c) => c.id === courseId)
+    if (!course) return
+    const ids = course.stretch_ids.join(',')
+    navigate(`/player?stretches=${ids}`)
   }
 
   return (
