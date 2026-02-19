@@ -64,21 +64,28 @@ button {
   animation: hint-blink 3s ease-in-out;
 }
 
-/* スライダーめくりアニメーション */
-@keyframes slide-in-from-right {
-  0% { transform: translateX(100%); opacity: 0; }
-  100% { transform: translateX(0); opacity: 1; }
+/* スライダーカルーセルアニメーション（2カード同時表示で捲れる感） */
+@keyframes slider-track-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
-@keyframes slide-in-from-left {
-  0% { transform: translateX(-100%); opacity: 0; }
-  100% { transform: translateX(0); opacity: 1; }
+@keyframes slider-track-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
 }
 
-.slide-in-right {
-  animation: slide-in-from-right 0.35s ease-out;
+.slider-track {
+  display: flex;
+  width: 200%;
+  height: 100%;
 }
 
-.slide-in-left {
-  animation: slide-in-from-left 0.35s ease-out;
+.slider-left {
+  animation: slider-track-left 0.4s ease-out forwards;
+}
+
+.slider-right {
+  transform: translateX(-50%);
+  animation: slider-track-right 0.4s ease-out forwards;
 }

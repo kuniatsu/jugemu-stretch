@@ -50,34 +50,30 @@ export function PlayerScreen() {
     return () => window.clearInterval(interval)
   }, [timer.phase])
 
-  // Slide animation: track stretch index changes
-  const [slideClass, setSlideClass] = useState('')
+  // ── Slider transition: ONLY on stretch index change ──
+  const [transition, setTransition] = useState<{
+    fromIndex: number
+    direction: 'left' | 'right'
+  } | null>(null)
   const prevIndexRef = useRef(timer.currentStretchIndex)
-  const prevPhaseRef = useRef(timer.phase)
 
   useEffect(() => {
-    const indexChanged = prevIndexRef.current !== timer.currentStretchIndex
-    const becameActive = prevPhaseRef.current === 'prep' && timer.phase === 'active'
-    const becamePrep = prevPhaseRef.current === 'active' && timer.phase === 'prep'
-
-    if (indexChanged) {
-      const dir = timer.currentStretchIndex > prevIndexRef.current ? 'slide-in-right' : 'slide-in-left'
-      setSlideClass(dir)
-      const timeout = setTimeout(() => setSlideClass(''), 350)
+    // Don't animate on idle/finished
+    if (timer.phase === 'idle' || timer.phase === 'finished') {
       prevIndexRef.current = timer.currentStretchIndex
-      prevPhaseRef.current = timer.phase
-      return () => clearTimeout(timeout)
-    } else if (becameActive || becamePrep) {
-      // Phase changed within same stretch (e.g. prep → active, or right → left via prep)
-      setSlideClass('slide-in-right')
-      const timeout = setTimeout(() => setSlideClass(''), 350)
-      prevPhaseRef.current = timer.phase
+      return
+    }
+    // Only animate when stretch INDEX changes (not phase changes)
+    if (prevIndexRef.current !== timer.currentStretchIndex) {
+      const direction = timer.currentStretchIndex > prevIndexRef.current ? 'left' : 'right'
+      setTransition({ fromIndex: prevIndexRef.current, direction })
+      prevIndexRef.current = timer.currentStretchIndex
+      const timeout = setTimeout(() => setTransition(null), 400)
       return () => clearTimeout(timeout)
     }
-    prevPhaseRef.current = timer.phase
   }, [timer.currentStretchIndex, timer.phase])
 
-  // Swipe handling
+  // ── Swipe handling ──
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -88,7 +84,7 @@ export function PlayerScreen() {
     }
   }, [])
 
-  // Tap to pause (for mouse/desktop)
+  // Desktop: click to pause
   const handleTap = useCallback(
     (e: React.MouseEvent) => {
       if (e.detail === 0) return
@@ -101,7 +97,7 @@ export function PlayerScreen() {
     [timer]
   )
 
-  // Touch: detect tap vs swipe in touchEnd
+  // Mobile: detect tap vs swipe
   const handleTouchEndWithTap = useCallback(
     (e: React.TouchEvent) => {
       if (!touchStartRef.current) return
@@ -140,6 +136,38 @@ export function PlayerScreen() {
     navigate(-1)
   }
 
+  // ── Render a single stretch card ──
+  const renderCard = (stretch: Stretch, isActive: boolean) => {
+    const images = getStretchImages(stretch.id)
+    return (
+      <div style={styles.card}>
+        {images && (
+          <div style={styles.imageContainer}>
+            <img src={images.white} alt="" style={styles.imageBase} />
+            {isActive && (
+              <img
+                src={images.red}
+                alt=""
+                style={styles.imageOverlay}
+                className="muscle-glow-overlay"
+              />
+            )}
+          </div>
+        )}
+        {isActive ? (
+          <div style={styles.timerContainer}>
+            <span style={{ ...styles.timerText, color: timerColor }}>
+              {timer.secondsRemaining}
+            </span>
+          </div>
+        ) : (
+          <span style={styles.leavingCardTitle}>{stretch.title}</span>
+        )}
+      </div>
+    )
+  }
+
+  // ── Empty state ──
   if (stretchList.length === 0) {
     return (
       <div id="player-screen-empty" style={styles.screen}>
@@ -156,6 +184,7 @@ export function PlayerScreen() {
   return (
     <div id="player-screen" style={styles.screen}>
       <div id="player-content" style={styles.content}>
+        {/* ── Idle: preview list ── */}
         {timer.phase === 'idle' && (
           <>
             <h2 id="player-ready-title" style={styles.readyTitle}>ストレッチを始めましょう</h2>
@@ -179,6 +208,7 @@ export function PlayerScreen() {
           </>
         )}
 
+        {/* ── Active: slider UI ── */}
         {(timer.phase === 'prep' || timer.phase === 'active') && (
           <div
             id="player-active-area"
@@ -204,51 +234,60 @@ export function PlayerScreen() {
                 style={{
                   ...styles.phaseIndicator,
                   backgroundColor:
-                    timer.phase === 'prep'
-                      ? colors.accent
-                      : colors.primary,
+                    timer.phase === 'prep' ? colors.accent : colors.primary,
                 }}
               >
                 {getPhaseLabel(timer.phase, timer.activeSide)}
               </div>
             </div>
 
-            {/* Center: Image + Timer (with slide animation) */}
-            <div
-              id="player-center"
-              key={`${timer.currentStretchIndex}-${timer.phase}-${timer.activeSide}`}
-              className={slideClass}
-              style={styles.center}
-            >
-              {/* Stretch Image with Muscle Glow */}
-              {timer.currentStretch && (() => {
-                const images = getStretchImages(timer.currentStretch.id)
-                if (!images) return null
-                return (
-                  <div id="player-stretch-image" style={styles.imageContainer}>
-                    <img
-                      id="player-stretch-image-white"
-                      src={images.white}
-                      alt=""
-                      style={styles.imageBase}
-                    />
-                    <img
-                      id="player-stretch-image-red"
-                      src={images.red}
-                      alt=""
-                      style={styles.imageOverlay}
-                      className="muscle-glow-overlay"
-                    />
-                  </div>
-                )
-              })()}
+            {/* Page indicator dots */}
+            <div id="player-dots" style={styles.dotsContainer}>
+              {stretchList.map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    ...styles.dot,
+                    ...(i === timer.currentStretchIndex ? styles.dotActive : {}),
+                  }}
+                />
+              ))}
+            </div>
 
-              {/* Timer Display */}
-              <div id="player-timer-container" style={styles.timerContainer}>
-                <span id="player-timer-text" style={{ ...styles.timerText, color: timerColor }}>
-                  {timer.secondsRemaining}
-                </span>
-              </div>
+            {/* ── Slider container: this is the actual carousel ── */}
+            <div id="player-slider" style={styles.sliderContainer}>
+              {transition ? (
+                // During transition: show two cards side by side, animate
+                <div
+                  className={`slider-track slider-${transition.direction}`}
+                  style={styles.sliderTrack}
+                >
+                  {transition.direction === 'left' ? (
+                    // Going forward: [old | new] → slide left to reveal new
+                    <>
+                      <div style={styles.sliderPage}>
+                        {renderCard(stretchList[transition.fromIndex], false)}
+                      </div>
+                      <div style={styles.sliderPage}>
+                        {timer.currentStretch && renderCard(timer.currentStretch, true)}
+                      </div>
+                    </>
+                  ) : (
+                    // Going back: [new | old] → slide right to reveal new
+                    <>
+                      <div style={styles.sliderPage}>
+                        {timer.currentStretch && renderCard(timer.currentStretch, true)}
+                      </div>
+                      <div style={styles.sliderPage}>
+                        {renderCard(stretchList[transition.fromIndex], false)}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                // Normal state: single card, no animation
+                timer.currentStretch && renderCard(timer.currentStretch, true)
+              )}
             </div>
 
             {/* Bottom: Hint + Progress Bar */}
@@ -274,6 +313,7 @@ export function PlayerScreen() {
           </div>
         )}
 
+        {/* ── Finished ── */}
         {timer.phase === 'finished' && (
           <div id="player-finished" style={styles.finishedContainer}>
             <div id="player-finished-icon" style={styles.finishedIcon}>🎉</div>
@@ -360,14 +400,63 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.surface,
     flexShrink: 0,
   },
-  center: {
+  // ── Page indicator dots ──
+  dotsContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: 6,
+    padding: `${spacing.sm}px 0`,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    transition: 'background-color 0.3s, transform 0.3s',
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+    transform: 'scale(1.3)',
+  },
+  // ── Slider (carousel) ──
+  sliderContainer: {
     flex: 1,
+    overflow: 'hidden',
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sliderTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '200%',
+    height: '100%',
+    display: 'flex',
+  },
+  sliderPage: {
+    width: '50%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // ── Card (single stretch content) ──
+  card: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
     padding: spacing.md,
+    width: '100%',
+  },
+  leavingCardTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: 'bold',
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
   },
   imageContainer: {
     position: 'relative',
