@@ -18,7 +18,7 @@ export function CourseListScreen() {
     <div id="course-list-screen" style={styles.screen}>
       <Header title="コースでストレッチ" showBack />
       <div id="course-list-content" style={styles.content}>
-        {courses.map((course) => {
+        {courses.filter((c) => c.id === 'basic_stretch').map((course) => {
           const stretchCount = course.stretch_ids.length
           const totalSeconds = course.stretch_ids.reduce((acc, id) => {
             const s = getStretchById(id)

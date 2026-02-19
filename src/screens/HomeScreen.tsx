@@ -4,6 +4,7 @@ import { Header } from '../components/Header'
 import { BodyMap } from '../components/BodyMap'
 import { getMusclesByZone } from '../data/muscles'
 import { getStretchesByMuscle } from '../data/stretches'
+import { getMuscleZoneIds } from '../data/bodyZones'
 import type { BodyZone } from '../data/bodyZones'
 import type { Muscle } from '../data/muscles'
 import type { Stretch } from '../data/stretches'
@@ -20,7 +21,9 @@ export function HomeScreen() {
   const [viewState, setViewState] = useState<ViewState>({ type: 'bodyMap' })
 
   const handleZonePress = (zone: BodyZone) => {
-    const muscles = getMusclesByZone(zone.id)
+    // Map the new 3-zone ID to multiple muscle zone IDs
+    const muscleZoneIds = getMuscleZoneIds(zone.id)
+    const muscles = muscleZoneIds.flatMap((zid) => getMusclesByZone(zid))
     if (muscles.length === 0) return
     setViewState({ type: 'muscleList', zone, muscles })
   }
@@ -36,10 +39,8 @@ export function HomeScreen() {
 
   const handleBack = () => {
     if (viewState.type === 'stretchList') {
-      const muscle = viewState.muscle
-      const muscles = getMusclesByZone(muscle.zone_id)
-      const zone = { id: muscle.zone_id, name: '', side: muscle.side, x: 0, y: 0, width: 0, height: 0 }
-      setViewState({ type: 'muscleList', zone, muscles })
+      // Go back to body map (simplified flow)
+      setViewState({ type: 'bodyMap' })
     } else {
       setViewState({ type: 'bodyMap' })
     }

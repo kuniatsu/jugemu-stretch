@@ -50,6 +50,33 @@ export function PlayerScreen() {
     return () => window.clearInterval(interval)
   }, [timer.phase])
 
+  // Slide animation: track stretch index changes
+  const [slideClass, setSlideClass] = useState('')
+  const prevIndexRef = useRef(timer.currentStretchIndex)
+  const prevPhaseRef = useRef(timer.phase)
+
+  useEffect(() => {
+    const indexChanged = prevIndexRef.current !== timer.currentStretchIndex
+    const becameActive = prevPhaseRef.current === 'prep' && timer.phase === 'active'
+    const becamePrep = prevPhaseRef.current === 'active' && timer.phase === 'prep'
+
+    if (indexChanged) {
+      const dir = timer.currentStretchIndex > prevIndexRef.current ? 'slide-in-right' : 'slide-in-left'
+      setSlideClass(dir)
+      const timeout = setTimeout(() => setSlideClass(''), 350)
+      prevIndexRef.current = timer.currentStretchIndex
+      prevPhaseRef.current = timer.phase
+      return () => clearTimeout(timeout)
+    } else if (becameActive || becamePrep) {
+      // Phase changed within same stretch (e.g. prep → active, or right → left via prep)
+      setSlideClass('slide-in-right')
+      const timeout = setTimeout(() => setSlideClass(''), 350)
+      prevPhaseRef.current = timer.phase
+      return () => clearTimeout(timeout)
+    }
+    prevPhaseRef.current = timer.phase
+  }, [timer.currentStretchIndex, timer.phase])
+
   // Swipe handling
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
 
@@ -64,11 +91,8 @@ export function PlayerScreen() {
   // Tap to pause (for mouse/desktop)
   const handleTap = useCallback(
     (e: React.MouseEvent) => {
-      // Ignore if it was a swipe (touch events handle swipe)
-      if (e.detail === 0) return // triggered by touch
-
+      if (e.detail === 0) return
       if (timer.phase !== 'prep' && timer.phase !== 'active') return
-
       if (timer.isRunning) {
         timer.pause()
         setShowPausePopup(true)
@@ -95,7 +119,6 @@ export function PlayerScreen() {
           timer.prev()
         }
       } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
-        // It's a tap
         if (timer.phase !== 'prep' && timer.phase !== 'active') return
         if (timer.isRunning) {
           timer.pause()
@@ -190,8 +213,13 @@ export function PlayerScreen() {
               </div>
             </div>
 
-            {/* Center: Image + Timer */}
-            <div id="player-center" style={styles.center}>
+            {/* Center: Image + Timer (with slide animation) */}
+            <div
+              id="player-center"
+              key={`${timer.currentStretchIndex}-${timer.phase}-${timer.activeSide}`}
+              className={slideClass}
+              style={styles.center}
+            >
               {/* Stretch Image with Muscle Glow */}
               {timer.currentStretch && (() => {
                 const images = getStretchImages(timer.currentStretch.id)
@@ -223,8 +251,16 @@ export function PlayerScreen() {
               </div>
             </div>
 
-            {/* Bottom: Progress Bar + Hint */}
+            {/* Bottom: Hint + Progress Bar */}
             <div id="player-bottom" style={styles.bottom}>
+              <span
+                id="player-hint-text"
+                key={hintIndex}
+                className="player-hint-blink"
+                style={styles.hintText}
+              >
+                {hints[hintIndex]}
+              </span>
               <div id="player-progress-bar" style={styles.progressBarContainer}>
                 <div
                   id="player-progress-bar-fill"
@@ -234,14 +270,6 @@ export function PlayerScreen() {
                   }}
                 />
               </div>
-              <span
-                id="player-hint-text"
-                key={hintIndex}
-                className="player-hint-blink"
-                style={styles.hintText}
-              >
-                {hints[hintIndex]}
-              </span>
             </div>
           </div>
         )}
@@ -288,6 +316,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.surface,
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden',
   },
   content: {
     flex: 1,
@@ -301,6 +330,7 @@ const styles: Record<string, React.CSSProperties> = {
     userSelect: 'none',
     touchAction: 'pan-y',
     cursor: 'pointer',
+    overflow: 'hidden',
   },
   topBar: {
     display: 'flex',
@@ -395,9 +425,10 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'width 0.3s',
   },
   hintText: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: fontSize.lg,
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   // Idle / Preview
   readyTitle: {
