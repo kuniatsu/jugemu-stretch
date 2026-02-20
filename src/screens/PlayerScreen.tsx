@@ -30,6 +30,16 @@ export function PlayerScreen() {
     return ids.map(getStretchById).filter((s): s is Stretch => s !== undefined)
   }, [searchParams])
 
+  // Preload all stretch images on mount (before user presses start)
+  useEffect(() => {
+    stretchList.forEach((s) => {
+      const imgs = getStretchImages(s.id)
+      if (!imgs) return
+      const r = new Image(); r.src = imgs.red
+      const w = new Image(); w.src = imgs.white
+    })
+  }, [stretchList])
+
   const timer = useStretchTimer(stretchList)
 
   const isUrgent = timer.phase === 'active' && timer.secondsRemaining <= URGENT_THRESHOLD
