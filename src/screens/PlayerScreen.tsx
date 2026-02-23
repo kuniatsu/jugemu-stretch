@@ -21,6 +21,9 @@ function getPhaseLabel(phase: string, activeSide: string): string {
   }
 }
 
+const SNAP_THRESHOLD = 80 // px drag distance to commit
+const VELOCITY_THRESHOLD = 0.3 // px/ms for quick flick
+
 export function PlayerScreen() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -50,7 +53,7 @@ export function PlayerScreen() {
 
   // Hint text alternation
   const [hintIndex, setHintIndex] = useState(0)
-  const hints = ['タップで一時停止', 'スワイプで前後のストレッチに移動']
+  const hints = ['タップで一時停止', 'スライドで前後のストレッチに移動']
 
   useEffect(() => {
     if (timer.phase !== 'prep' && timer.phase !== 'active') return
@@ -60,21 +63,32 @@ export function PlayerScreen() {
     return () => window.clearInterval(interval)
   }, [timer.phase])
 
-  // ── Slider transition: ONLY on stretch index change ──
+  // ── Auto-advance transition (countdown=0 → next stretch) ──
   const [transition, setTransition] = useState<{
     fromIndex: number
     direction: 'left' | 'right'
   } | null>(null)
   const prevIndexRef = useRef(timer.currentStretchIndex)
+  const userNavigatedRef = useRef(false)
 
   useEffect(() => {
-    // Don't animate on idle/finished
     if (timer.phase === 'idle' || timer.phase === 'finished') {
       prevIndexRef.current = timer.currentStretchIndex
       return
     }
-    // Only animate when stretch INDEX changes (not phase changes)
     if (prevIndexRef.current !== timer.currentStretchIndex) {
+      // User drag already handled the visual transition
+      if (userNavigatedRef.current) {
+        userNavigatedRef.current = false
+        prevIndexRef.current = timer.currentStretchIndex
+        return
+      }
+      // Auto-advance: reset any drag state and animate
+      isDraggingRef.current = false
+      dragStartRef.current = null
+      updateOffset(0)
+      setIsSnapAnimating(false)
+
       const direction = timer.currentStretchIndex > prevIndexRef.current ? 'left' : 'right'
       setTransition({ fromIndex: prevIndexRef.current, direction })
       prevIndexRef.current = timer.currentStretchIndex
@@ -83,16 +97,143 @@ export function PlayerScreen() {
     }
   }, [timer.currentStretchIndex, timer.phase])
 
-  // ── Swipe handling ──
+  // ── Drag / slide state ──
+  const [offsetX, setOffsetX] = useState(0)
+  const [isSnapAnimating, setIsSnapAnimating] = useState(false)
+  const offsetXRef = useRef(0)
+  const isDraggingRef = useRef(false)
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null)
+  const sliderRef = useRef<HTMLDivElement>(null)
+  const pendingSnapRef = useRef<(() => void) | null>(null)
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-      time: Date.now(),
-    }
+  const prevStretch = timer.currentStretchIndex > 0
+    ? stretchList[timer.currentStretchIndex - 1]
+    : null
+  const nextStretch = timer.currentStretchIndex < stretchList.length - 1
+    ? stretchList[timer.currentStretchIndex + 1]
+    : null
+
+  const updateOffset = useCallback((val: number) => {
+    offsetXRef.current = val
+    setOffsetX(val)
   }, [])
+
+  // ── Touch handlers ──
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // If snap animation in progress, complete it immediately (allows rapid flicks)
+    if (pendingSnapRef.current) {
+      pendingSnapRef.current()
+      pendingSnapRef.current = null
+    }
+
+    const touch = e.touches[0]
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() }
+    dragStartRef.current = { x: touch.clientX, y: touch.clientY }
+    isDraggingRef.current = false
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragStartRef.current || isSnapAnimating || transition) return
+
+    const touch = e.touches[0]
+    const dx = touch.clientX - dragStartRef.current.x
+    const dy = touch.clientY - dragStartRef.current.y
+
+    // Direction lock on first significant movement
+    if (!isDraggingRef.current) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        isDraggingRef.current = true
+      } else if (Math.abs(dy) > 10) {
+        // Vertical → abort, let page scroll
+        dragStartRef.current = null
+        return
+      } else {
+        return // Not enough movement yet
+      }
+    }
+
+    // Rubber band at edges
+    let clamped = dx
+    if (!nextStretch && dx < 0) clamped = dx * 0.2
+    if (!prevStretch && dx > 0) clamped = dx * 0.2
+    updateOffset(clamped)
+  }, [isSnapAnimating, transition, nextStretch, prevStretch, updateOffset])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - touchStartRef.current.x
+    const dy = touch.clientY - touchStartRef.current.y
+    const dt = Date.now() - touchStartRef.current.time
+    const velocity = dt > 0 ? Math.abs(dx) / dt : 0
+
+    touchStartRef.current = null
+    dragStartRef.current = null
+
+    // Tap detection (not dragging)
+    if (!isDraggingRef.current) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
+        if ((timer.phase === 'prep' || timer.phase === 'active') && timer.isRunning) {
+          timer.pause()
+          setShowPausePopup(true)
+        }
+      }
+      isDraggingRef.current = false
+      return
+    }
+
+    isDraggingRef.current = false
+    const currentOffset = offsetXRef.current
+    const containerWidth = sliderRef.current?.clientWidth ?? 400
+
+    const shouldGoNext = !!nextStretch &&
+      (currentOffset < -SNAP_THRESHOLD || (velocity > VELOCITY_THRESHOLD && dx < -20))
+    const shouldGoPrev = !!prevStretch &&
+      (currentOffset > SNAP_THRESHOLD || (velocity > VELOCITY_THRESHOLD && dx > 20))
+
+    if (shouldGoNext) {
+      setIsSnapAnimating(true)
+      updateOffset(-containerWidth)
+      const timeoutId = setTimeout(() => {
+        pendingSnapRef.current = null
+        userNavigatedRef.current = true
+        timer.skip()
+        updateOffset(0)
+        setIsSnapAnimating(false)
+      }, 300)
+      pendingSnapRef.current = () => {
+        clearTimeout(timeoutId)
+        userNavigatedRef.current = true
+        timer.skip()
+        updateOffset(0)
+        setIsSnapAnimating(false)
+      }
+    } else if (shouldGoPrev) {
+      setIsSnapAnimating(true)
+      updateOffset(containerWidth)
+      const timeoutId = setTimeout(() => {
+        pendingSnapRef.current = null
+        userNavigatedRef.current = true
+        timer.prev()
+        updateOffset(0)
+        setIsSnapAnimating(false)
+      }, 300)
+      pendingSnapRef.current = () => {
+        clearTimeout(timeoutId)
+        userNavigatedRef.current = true
+        timer.prev()
+        updateOffset(0)
+        setIsSnapAnimating(false)
+      }
+    } else {
+      // Snap back to center
+      setIsSnapAnimating(true)
+      updateOffset(0)
+      setTimeout(() => setIsSnapAnimating(false), 300)
+    }
+  }, [timer, nextStretch, prevStretch, updateOffset])
 
   // Desktop: click to pause
   const handleTap = useCallback(
@@ -102,34 +243,6 @@ export function PlayerScreen() {
       if (timer.isRunning) {
         timer.pause()
         setShowPausePopup(true)
-      }
-    },
-    [timer]
-  )
-
-  // Mobile: detect tap vs swipe
-  const handleTouchEndWithTap = useCallback(
-    (e: React.TouchEvent) => {
-      if (!touchStartRef.current) return
-      const dx = e.changedTouches[0].clientX - touchStartRef.current.x
-      const dy = e.changedTouches[0].clientY - touchStartRef.current.y
-      const dt = Date.now() - touchStartRef.current.time
-      touchStartRef.current = null
-
-      const isSwipe = Math.abs(dx) > 50 && Math.abs(dy) < Math.abs(dx) && dt < 500
-
-      if (isSwipe) {
-        if (dx < 0) {
-          timer.skip()
-        } else {
-          timer.prev()
-        }
-      } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {
-        if (timer.phase !== 'prep' && timer.phase !== 'active') return
-        if (timer.isRunning) {
-          timer.pause()
-          setShowPausePopup(true)
-        }
       }
     },
     [timer]
@@ -224,7 +337,8 @@ export function PlayerScreen() {
             id="player-active-area"
             style={styles.activeArea}
             onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEndWithTap}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             onClick={handleTap}
           >
             {/* Top Bar: Title left, Phase right */}
@@ -264,39 +378,53 @@ export function PlayerScreen() {
               ))}
             </div>
 
-            {/* ── Slider container: this is the actual carousel ── */}
-            <div id="player-slider" style={styles.sliderContainer}>
+            {/* ── Slider container ── */}
+            <div id="player-slider" style={styles.sliderContainer} ref={sliderRef}>
               {transition ? (
-                // During transition: show two cards side by side, animate
+                // Auto-advance: 2-card CSS animation
                 <div
                   className={`slider-track slider-${transition.direction}`}
-                  style={styles.sliderTrack}
+                  style={styles.autoTrack}
                 >
                   {transition.direction === 'left' ? (
-                    // Going forward: [old | new] → slide left to reveal new
                     <>
-                      <div style={styles.sliderPage}>
+                      <div style={styles.autoPage}>
                         {renderCard(stretchList[transition.fromIndex], false)}
                       </div>
-                      <div style={styles.sliderPage}>
+                      <div style={styles.autoPage}>
                         {timer.currentStretch && renderCard(timer.currentStretch, true)}
                       </div>
                     </>
                   ) : (
-                    // Going back: [new | old] → slide right to reveal new
                     <>
-                      <div style={styles.sliderPage}>
+                      <div style={styles.autoPage}>
                         {timer.currentStretch && renderCard(timer.currentStretch, true)}
                       </div>
-                      <div style={styles.sliderPage}>
+                      <div style={styles.autoPage}>
                         {renderCard(stretchList[transition.fromIndex], false)}
                       </div>
                     </>
                   )}
                 </div>
               ) : (
-                // Normal state: single card, no animation
-                timer.currentStretch && renderCard(timer.currentStretch, true)
+                // Drag mode: 3-card track that follows finger
+                <div
+                  style={{
+                    ...styles.dragTrack,
+                    transform: `translateX(calc(-33.33% + ${offsetX}px))`,
+                    transition: isSnapAnimating ? 'transform 0.3s ease-out' : 'none',
+                  }}
+                >
+                  <div style={styles.dragPage}>
+                    {prevStretch ? renderCard(prevStretch, false) : <div />}
+                  </div>
+                  <div style={styles.dragPage}>
+                    {timer.currentStretch && renderCard(timer.currentStretch, true)}
+                  </div>
+                  <div style={styles.dragPage}>
+                    {nextStretch ? renderCard(nextStretch, false) : <div />}
+                  </div>
+                </div>
               )}
             </div>
 
@@ -378,7 +506,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     userSelect: 'none',
-    touchAction: 'pan-y',
+    touchAction: 'none',
     cursor: 'pointer',
     overflow: 'hidden',
   },
@@ -428,7 +556,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.primary,
     transform: 'scale(1.3)',
   },
-  // ── Slider (carousel) ──
+  // ── Slider container ──
   sliderContainer: {
     flex: 1,
     overflow: 'hidden',
@@ -437,7 +565,8 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sliderTrack: {
+  // Auto-advance track (2 cards, CSS animation)
+  autoTrack: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -445,8 +574,25 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100%',
     display: 'flex',
   },
-  sliderPage: {
+  autoPage: {
     width: '50%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Drag track (3 cards, follows finger)
+  dragTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '300%',
+    height: '100%',
+    display: 'flex',
+    willChange: 'transform',
+  },
+  dragPage: {
+    width: '33.33%',
     height: '100%',
     display: 'flex',
     alignItems: 'center',
