@@ -52,11 +52,6 @@ export function CreateCourseDetailScreen() {
     navigate(`/create-course/${courseId}/select-stretch`)
   }
 
-  const handleStartCourse = () => {
-    if (course.stretch_ids.length === 0) return
-    navigate(`/player?stretches=${course.stretch_ids.join(',')}`)
-  }
-
   return (
     <div id="create-detail-screen" style={styles.screen}>
       <Header title="コース編集" showBack />
@@ -151,16 +146,6 @@ export function CreateCourseDetailScreen() {
           ＋ ストレッチを追加
         </button>
 
-        {/* Start Course Button */}
-        {stretchList.length > 0 && (
-          <button
-            id="create-detail-start-btn"
-            style={styles.startButton}
-            onClick={handleStartCourse}
-          >
-            このコースを開始する
-          </button>
-        )}
       </div>
     </div>
   )
@@ -318,18 +303,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: fontSize.md,
     fontWeight: 'bold',
     color: colors.primary,
-    cursor: 'pointer',
-    marginTop: spacing.md,
-  },
-  startButton: {
-    width: '100%',
-    padding: spacing.md,
-    backgroundColor: colors.secondary,
-    color: colors.surface,
-    border: 'none',
-    borderRadius: borderRadius.lg,
-    fontSize: fontSize.lg,
-    fontWeight: 'bold',
     cursor: 'pointer',
     marginTop: spacing.md,
   },
