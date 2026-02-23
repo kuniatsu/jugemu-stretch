@@ -2,43 +2,84 @@ import { useNavigate } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { courses } from '../data/courses'
 import { getStretchById } from '../data/stretches'
+import { useCustomCourses } from '../hooks/useCustomCourses'
 import { colors, fontSize, spacing, borderRadius } from '../styles/theme'
+
+function calcCourseMeta(stretchIds: string[]) {
+  const stretchCount = stretchIds.length
+  const totalSeconds = stretchIds.reduce((acc, id) => {
+    const s = getStretchById(id)
+    if (!s) return acc
+    return acc + s.duration_seconds * (s.is_sided ? 2 : 1) + 5
+  }, 0)
+  const totalMinutes = Math.ceil(totalSeconds / 60)
+  return { stretchCount, totalMinutes }
+}
 
 export function CourseListScreen() {
   const navigate = useNavigate()
+  const { courses: customCourses } = useCustomCourses()
 
-  const handleCoursePress = (courseId: string) => {
+  const handlePresetPress = (courseId: string) => {
     const course = courses.find((c) => c.id === courseId)
     if (!course) return
     const ids = course.stretch_ids.join(',')
     navigate(`/player?stretches=${ids}`)
   }
 
+  const handleCustomPress = (stretchIds: string[]) => {
+    if (stretchIds.length === 0) return
+    navigate(`/player?stretches=${stretchIds.join(',')}`)
+  }
+
+  // カスタムコースで再生可能なもの（ストレッチが1つ以上）
+  const playableCustom = customCourses.filter((c) => c.stretch_ids.length > 0)
+
   return (
     <div id="course-list-screen" style={styles.screen}>
       <Header title="コースでストレッチ" showBack />
       <div id="course-list-content" style={styles.content}>
-        {courses.filter((c) => c.id === 'basic_stretch').map((course) => {
-          const stretchCount = course.stretch_ids.length
-          const totalSeconds = course.stretch_ids.reduce((acc, id) => {
-            const s = getStretchById(id)
-            if (!s) return acc
-            return acc + s.duration_seconds * (s.is_sided ? 2 : 1) + 5
-          }, 0)
-          const totalMinutes = Math.ceil(totalSeconds / 60)
+        {/* カスタムコース（一番上） */}
+        {playableCustom.length > 0 && (
+          <>
+            <p style={styles.sectionLabel}>マイコース</p>
+            {playableCustom.map((custom) => {
+              const { stretchCount, totalMinutes } = calcCourseMeta(custom.stretch_ids)
+              return (
+                <button
+                  key={custom.id}
+                  id={`course-card-${custom.id}`}
+                  style={styles.card}
+                  onClick={() => handleCustomPress(custom.stretch_ids)}
+                >
+                  <div style={styles.cardHeader}>
+                    <h3 style={styles.cardTitle}>{custom.title}</h3>
+                    <span style={styles.customBadge}>カスタム</span>
+                  </div>
+                  <div style={styles.cardMeta}>
+                    <span style={styles.metaItem}>{stretchCount}種目</span>
+                    <span style={styles.metaDot}>·</span>
+                    <span style={styles.metaItem}>約{totalMinutes}分</span>
+                  </div>
+                </button>
+              )
+            })}
+          </>
+        )}
 
+        {/* プリセットコース */}
+        {playableCustom.length > 0 && <p style={styles.sectionLabel}>プリセットコース</p>}
+        {courses.filter((c) => c.id === 'basic_stretch').map((course) => {
+          const { stretchCount, totalMinutes } = calcCourseMeta(course.stretch_ids)
           return (
             <button
               key={course.id}
               id={`course-card-${course.id}`}
               style={styles.card}
-              onClick={() => handleCoursePress(course.id)}
+              onClick={() => handlePresetPress(course.id)}
             >
               <div id={`course-card-header-${course.id}`} style={styles.cardHeader}>
                 <h3 id={`course-card-title-${course.id}`} style={styles.cardTitle}>{course.title}</h3>
-                {!course.is_free && (
-                  <span id={`course-premium-badge-${course.id}`} style={styles.premiumBadge}>有料</span>
-                )}
               </div>
               <p id={`course-card-desc-${course.id}`} style={styles.cardDesc}>{course.description}</p>
               <div id={`course-card-meta-${course.id}`} style={styles.cardMeta}>
@@ -66,6 +107,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: spacing.md,
   },
+  sectionLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: 'bold',
+    color: colors.textSecondary,
+    margin: `${spacing.sm}px 0 -${spacing.sm}px`,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   card: {
     display: 'flex',
     flexDirection: 'column',
@@ -90,10 +139,10 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.text,
     margin: 0,
   },
-  premiumBadge: {
+  customBadge: {
     fontSize: fontSize.xs,
-    backgroundColor: colors.accent,
-    color: colors.surface,
+    backgroundColor: colors.primary + '20',
+    color: colors.primary,
     padding: `2px ${spacing.sm}px`,
     borderRadius: borderRadius.full,
     fontWeight: 'bold',

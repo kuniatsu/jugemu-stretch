@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { getIsPro } from './useSettings'
 
 export interface CustomCourse {
   id: string
@@ -8,6 +9,7 @@ export interface CustomCourse {
 }
 
 const STORAGE_KEY = 'jugemu_custom_courses'
+const FREE_MAX_STRETCHES = 3
 
 function loadCourses(): CustomCourse[] {
   try {
@@ -22,8 +24,6 @@ function loadCourses(): CustomCourse[] {
 function saveCourses(courses: CustomCourse[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(courses))
 }
-
-const FREE_MAX_STRETCHES = 1
 
 export function useCustomCourses() {
   const [courses, setCourses] = useState<CustomCourse[]>(loadCourses)
@@ -66,10 +66,10 @@ export function useCustomCourses() {
         return { ok: false, error: 'すでに追加されています' }
       }
 
-      if (target.stretch_ids.length >= FREE_MAX_STRETCHES) {
+      if (!getIsPro() && target.stretch_ids.length >= FREE_MAX_STRETCHES) {
         return {
           ok: false,
-          error: '無料版で選べるストレッチは1つまでです。有料版をご購入ください。',
+          error: `無料版で選べるストレッチは${FREE_MAX_STRETCHES}つまでです。Pro版に切り替えてください。`,
         }
       }
 

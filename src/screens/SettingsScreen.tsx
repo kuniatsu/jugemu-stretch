@@ -4,7 +4,7 @@ import { useSettings } from '../hooks/useSettings'
 import { colors, fontSize, spacing, borderRadius } from '../styles/theme'
 
 export function SettingsScreen() {
-  const { settings, setJugemuEnabled, isPaid } = useSettings()
+  const { settings, setJugemuEnabled, setProVersion, isPro } = useSettings()
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleToggleJugemu = () => {
@@ -15,10 +15,45 @@ export function SettingsScreen() {
     }
   }
 
+  const handleTogglePro = () => {
+    setProVersion(!isPro)
+  }
+
   return (
     <div id="settings-screen" style={styles.screen}>
       <Header title="設定" showBack />
       <div id="settings-content" style={styles.content}>
+        {/* Pro Version Toggle */}
+        <div id="settings-pro-card" style={styles.card}>
+          <div id="settings-pro-info" style={styles.cardInfo}>
+            <span id="settings-pro-label" style={styles.cardLabel}>
+              バージョン
+            </span>
+            <span id="settings-pro-desc" style={styles.cardDesc}>
+              {isPro ? 'Pro版（制限なし）' : '通常版'}
+            </span>
+          </div>
+          <button
+            id="settings-pro-toggle"
+            style={{
+              ...styles.toggle,
+              backgroundColor: isPro ? colors.accent : colors.border,
+            }}
+            onClick={handleTogglePro}
+          >
+            <div
+              id="settings-pro-toggle-knob"
+              style={{
+                ...styles.toggleKnob,
+                transform: isPro ? 'translateX(20px)' : 'translateX(0)',
+              }}
+            />
+          </button>
+        </div>
+        <p id="settings-pro-status" style={styles.statusText}>
+          {isPro ? 'Pro版: ON' : 'Pro版: OFF'}
+        </p>
+
         {/* Jugemu Toggle */}
         <div id="settings-jugemu-card" style={styles.card}>
           <div id="settings-jugemu-info" style={styles.cardInfo}>
@@ -44,44 +79,30 @@ export function SettingsScreen() {
             />
           </button>
         </div>
-
         <p id="settings-jugemu-status" style={styles.statusText}>
           現在: {settings.jugemu_enabled ? 'ON' : 'OFF'}
         </p>
 
-        {/* Version Info */}
-        <div id="settings-version-card" style={styles.card}>
-          <div id="settings-version-info" style={styles.cardInfo}>
-            <span id="settings-version-label" style={styles.cardLabel}>バージョン</span>
-            <span id="settings-version-value" style={styles.cardDesc}>
-              {isPaid ? '有料版' : '無料版'}
-            </span>
-          </div>
+        {/* Pro Benefits */}
+        <div id="settings-premium-card" style={{
+          ...styles.premiumCard,
+          ...(isPro ? styles.premiumCardActive : {}),
+        }}>
+          <h3 id="settings-premium-title" style={styles.premiumTitle}>
+            {isPro ? 'Pro版の特典（有効中）' : 'Pro版の特典'}
+          </h3>
+          <ul id="settings-premium-list" style={styles.premiumList}>
+            <li style={styles.premiumItem}>
+              じゅげむ音声をOFFにできます
+            </li>
+            <li style={styles.premiumItem}>
+              カスタムコースにストレッチを無制限に追加できます
+            </li>
+            <li style={styles.premiumItem}>
+              広告が非表示になります
+            </li>
+          </ul>
         </div>
-
-        {!isPaid && (
-          <div id="settings-premium-card" style={styles.premiumCard}>
-            <h3 id="settings-premium-title" style={styles.premiumTitle}>有料版の特典</h3>
-            <ul id="settings-premium-list" style={styles.premiumList}>
-              <li id="settings-premium-item-1" style={styles.premiumItem}>
-                じゅげむ音声をOFFにできます
-              </li>
-              <li id="settings-premium-item-2" style={styles.premiumItem}>
-                カスタムコースに複数のストレッチを追加できます
-              </li>
-              <li id="settings-premium-item-3" style={styles.premiumItem}>
-                広告が非表示になります
-              </li>
-            </ul>
-            <button
-              id="settings-premium-btn"
-              style={styles.premiumButton}
-              onClick={() => setErrorMsg('有料版は現在準備中です。もうしばらくお待ちください。')}
-            >
-              有料版を購入する
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Error/Info Popup */}
@@ -173,6 +194,10 @@ const styles: Record<string, React.CSSProperties> = {
     border: `1px solid ${colors.accent}40`,
     borderRadius: borderRadius.lg,
   },
+  premiumCardActive: {
+    backgroundColor: colors.secondary + '10',
+    border: `1px solid ${colors.secondary}40`,
+  },
   premiumTitle: {
     fontSize: fontSize.lg,
     fontWeight: 'bold',
@@ -180,24 +205,13 @@ const styles: Record<string, React.CSSProperties> = {
     margin: `0 0 ${spacing.sm}px`,
   },
   premiumList: {
-    margin: `0 0 ${spacing.md}px`,
+    margin: 0,
     paddingLeft: 20,
   },
   premiumItem: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
     lineHeight: 1.8,
-  },
-  premiumButton: {
-    width: '100%',
-    padding: spacing.md,
-    backgroundColor: colors.accent,
-    color: colors.surface,
-    border: 'none',
-    borderRadius: borderRadius.lg,
-    fontSize: fontSize.lg,
-    fontWeight: 'bold',
-    cursor: 'pointer',
   },
   overlay: {
     position: 'fixed',
